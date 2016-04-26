@@ -21,8 +21,6 @@ public class TipView extends TextView {
     public static final int MODE_TO_LEFT_TARGET = 2;
     public static final int MODE_TO_RIGHT_TARGET = 3;
 
-
-
     private static final int POINTER_SIZE_DP = 12;
     private static final int PADDING_DP = 4;
 
