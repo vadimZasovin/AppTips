@@ -110,7 +110,6 @@ public class TipView extends TextView {
                 super.setPadding(left + mPointerSize, top, right, bottom);
                 break;
         }
-
     }
 
     @Override
