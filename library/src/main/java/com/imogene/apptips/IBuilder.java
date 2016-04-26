@@ -1,7 +1,5 @@
 package com.imogene.apptips;
 
-import android.app.Activity;
-
 /**
  * Created by Admin on 25.04.2016.
  */
@@ -17,6 +15,6 @@ public interface IBuilder {
 
     AppTips build();
 
-    AppTips show(Activity activity);
+    AppTips show();
 
 }

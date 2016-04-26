@@ -22,7 +22,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 if(mAppTips == null){
-                    mAppTips = new AppTips.Builder()
+                    mAppTips = new AppTips.Builder(MainActivity.this)
                             .setDefaultOptions(TipOptions
                                     .create(MainActivity.this)
                                     .setPointerPosition(0.9f)
@@ -36,9 +36,9 @@ public class MainActivity extends Activity {
                                     .setTarget(R.id.text1)
                                     .setText("Beautiful"))
                             .setDimAmount(0.3f)
-                            .show(MainActivity.this);
+                            .show();
                 }else {
-                    mAppTips.show(MainActivity.this);
+                    mAppTips.show();
                 }
 
             }
