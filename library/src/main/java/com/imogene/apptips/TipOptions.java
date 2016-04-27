@@ -30,8 +30,10 @@ public final class TipOptions {
     int mMinWidth;
     int mMaxWidth;
     float mPointerPosition;
+    int mVerticalMargin;
+    int mHorizontalMargin;
     CharSequence mText; // required option
-    int mViewId; // requiredOption
+    int mViewId; // required option
 
     TipOptions(){}
 
@@ -46,6 +48,8 @@ public final class TipOptions {
         options.mMinWidth = Util.convertDpInPixels(context, DEFAULT_MIN_WIDTH);
         options.mMaxWidth = Util.convertDpInPixels(context, DEFAULT_MAX_WIDTH);
         options.mPointerPosition = 0.5f;
+        options.mVerticalMargin = 0;
+        options.mHorizontalMargin = 0;
         return options;
     }
 
@@ -59,6 +63,8 @@ public final class TipOptions {
         options.mMinWidth = src.mMinWidth;
         options.mMaxWidth = src.mMaxWidth;
         options.mPointerPosition = src.mPointerPosition;
+        options.mVerticalMargin = src.mVerticalMargin;
+        options.mHorizontalMargin = src.mHorizontalMargin;
         return options;
     }
 
@@ -102,6 +108,16 @@ public final class TipOptions {
 
     public TipOptions setPointerPosition(float position){
         mPointerPosition = position;
+        return this;
+    }
+
+    public TipOptions setVerticalMargin(int verticalMargin){
+        mVerticalMargin = verticalMargin;
+        return this;
+    }
+
+    public TipOptions setHorizontalMargin(int horizontalMargin){
+        mHorizontalMargin = horizontalMargin;
         return this;
     }
 

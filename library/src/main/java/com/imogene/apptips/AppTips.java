@@ -22,9 +22,9 @@ public class AppTips {
     private int mCurrentTip;
     private TipView mCurrentTipView;
 
-    OnShowListener mOnShowListener;
-    OnCloseListener mOnCloseListener;
-    OnTipChangeListener mOnTipChangeListener;
+    private OnShowListener mOnShowListener;
+    private OnCloseListener mOnCloseListener;
+    private OnTipChangeListener mOnTipChangeListener;
 
     AppTips(Builder builder){
         mBuilder = builder;
@@ -138,11 +138,14 @@ public class AppTips {
         final float targetX = target.getX();
         final float targetY = target.getY();
 
+        final int verticalMargin = options.mVerticalMargin;
+        final int horizontalMargin = options.mHorizontalMargin;
+
         switch (options.mAlign){
             case TipOptions.ALIGN_LEFT_BELOW:
                 layoutParams.gravity = Gravity.TOP | Gravity.START;
-                layoutParams.x = (int) targetX;
-                layoutParams.y = (int) (targetY + target.getHeight());
+                layoutParams.x = (int) targetX + horizontalMargin;
+                layoutParams.y = (int) (targetY + target.getHeight() + verticalMargin);
                 break;
             case TipOptions.ALIGN_RIGHT_BELOW:
                 layoutParams.gravity = Gravity.TOP | Gravity.START;
@@ -150,10 +153,10 @@ public class AppTips {
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = target.getWidth() - tipView.getWidth();
-                        layoutParams.x = (int) (targetX + delta);
+                        layoutParams.x = (int) (targetX + delta + horizontalMargin);
                     }
                 }.scheduleAdjusting();
-                layoutParams.y = (int) (targetY + target.getHeight());
+                layoutParams.y = (int) (targetY + target.getHeight() + verticalMargin);
                 break;
             case TipOptions.ALIGN_CENTER_BELOW:
                 layoutParams.gravity = Gravity.TOP | Gravity.START;
@@ -161,46 +164,51 @@ public class AppTips {
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = (target.getWidth() - tipView.getWidth()) / 2;
-                        layoutParams.x = (int) (targetX + delta);
+                        layoutParams.x = (int) (targetX + delta + horizontalMargin);
                     }
                 }.scheduleAdjusting();
-                layoutParams.y = (int) (targetY + target.getHeight());
+                layoutParams.y = (int) (targetY + target.getHeight() + verticalMargin);
                 break;
             case TipOptions.ALIGN_LEFT_ABOVE:
-                layoutParams.gravity = Gravity.BOTTOM | Gravity.START;
-                layoutParams.x = (int) targetX;
-                layoutParams.y = (int) (targetY + target.getHeight());
+                layoutParams.gravity = Gravity.TOP | Gravity.START;
+                layoutParams.x = (int) (targetX + horizontalMargin);
+                new LayoutAdjuster(target, layoutParams){
+                    @Override
+                    void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
+                        layoutParams.y = (int) (targetY - tipView.getHeight() - verticalMargin);
+                    }
+                }.scheduleAdjusting();
                 break;
             case TipOptions.ALIGN_RIGHT_ABOVE:
-                layoutParams.gravity = Gravity.BOTTOM | Gravity.START;
+                layoutParams.gravity = Gravity.TOP | Gravity.START;
                 new LayoutAdjuster(target, layoutParams){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = target.getWidth() - tipView.getWidth();
-                        layoutParams.x = (int) (targetX + delta);
+                        layoutParams.x = (int) (targetX + delta + horizontalMargin);
+                        layoutParams.y = (int) (targetY - tipView.getHeight() - verticalMargin);
                     }
                 }.scheduleAdjusting();
-                layoutParams.y = (int) (targetY + target.getHeight());
                 break;
             case TipOptions.ALIGN_CENTER_ABOVE:
-                layoutParams.gravity = Gravity.BOTTOM | Gravity.START;
+                layoutParams.gravity = Gravity.TOP | Gravity.START;
                 new LayoutAdjuster(target, layoutParams){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = (target.getWidth() - tipView.getWidth()) / 2;
-                        layoutParams.x = (int) (targetX + delta);
+                        layoutParams.x = (int) (targetX + delta + horizontalMargin);
+                        layoutParams.y = (int) (targetY - tipView.getHeight() - verticalMargin);
                     }
                 }.scheduleAdjusting();
-                layoutParams.y = (int) (targetY + target.getHeight());
                 break;
             case TipOptions.ALIGN_LEFT:
                 layoutParams.gravity = Gravity.TOP | Gravity.START;
                 new LayoutAdjuster(target, layoutParams){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
-                        layoutParams.x = (int) (targetX - tipView.getWidth());
-                        int delta = target.getHeight() - tipView.getHeight();
-                        layoutParams.y = (int) (targetY + delta);
+                        layoutParams.x = (int) (targetX - tipView.getWidth() - horizontalMargin);
+                        int delta = (target.getHeight() - tipView.getHeight()) / 2;
+                        layoutParams.y = (int) (targetY + delta + verticalMargin);
                     }
                 }.scheduleAdjusting();
                 break;
@@ -209,9 +217,9 @@ public class AppTips {
                 new LayoutAdjuster(target, layoutParams){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
-                        layoutParams.x = (int) (targetX + target.getWidth());
-                        int delta = target.getHeight() - tipView.getHeight();
-                        layoutParams.y = (int) (targetY + delta);
+                        layoutParams.x = (int) (targetX + target.getWidth() + horizontalMargin);
+                        int delta = (target.getHeight() - tipView.getHeight()) / 2;
+                        layoutParams.y = (int) (targetY + delta + verticalMargin);
                     }
                 }.scheduleAdjusting();
         }
