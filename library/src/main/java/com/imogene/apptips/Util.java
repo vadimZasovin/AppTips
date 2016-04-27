@@ -1,6 +1,7 @@
 package com.imogene.apptips;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.DisplayMetrics;
 
 /**
@@ -15,5 +16,9 @@ class Util {
 
     static float sinDegrees(float degrees){
         return (float) Math.sin(Math.toRadians(degrees));
+    }
+
+    static boolean checkApiVersion(int apiVersion){
+        return Build.VERSION.SDK_INT >= apiVersion;
     }
 }

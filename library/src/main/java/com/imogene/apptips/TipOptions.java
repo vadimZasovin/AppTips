@@ -1,6 +1,10 @@
 package com.imogene.apptips;
 
+import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.TypedArray;
+import android.graphics.Color;
+import android.os.Build;
 
 /**
  * Created by Admin on 25.04.2016.
@@ -37,11 +41,10 @@ public final class TipOptions {
 
     TipOptions(){}
 
-    @SuppressWarnings("deprecation")
     public static TipOptions create(Context context){
         TipOptions options = new TipOptions();
-        options.mColor = context.getResources().getColor(R.color.color_tip_view_default);
-        options.mTextColor = context.getResources().getColor(com.imogene.apptips.R.color.color_text_default);
+        options.mColor = obtainDefaultColor(context);
+        options.mTextColor = Color.WHITE;
         options.mPadding = Util.convertDpInPixels(context, DEFAULT_PADDING);
         options.mAlign = ALIGN_LEFT_BELOW;
         options.mMinHeight = Util.convertDpInPixels(context, DEFAULT_MIN_HEIGHT);
@@ -51,6 +54,42 @@ public final class TipOptions {
         options.mVerticalMargin = 0;
         options.mHorizontalMargin = 0;
         return options;
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private static int obtainDefaultColor(Context context){
+        boolean isPostLollipop = Util.checkApiVersion(Build.VERSION_CODES.LOLLIPOP);
+
+        int[] attrs = !isPostLollipop ? new int[]{R.attr.colorAccent} :
+                new int[]{android.R.attr.colorAccent, R.attr.colorAccent};
+
+        TypedArray array = context.getTheme().obtainStyledAttributes(attrs);
+        try {
+            int color = array.getColor(0, 0);
+
+            if(color == 0){
+                if(!isPostLollipop){
+                    return getPredefinedColor(context);
+                }else {
+                    color = array.getColor(1,0);
+                }
+            }else {
+                return color;
+            }
+
+            if(color == 0){
+                color = getPredefinedColor(context);
+            }
+
+            return color;
+        }finally {
+            array.recycle();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static int getPredefinedColor(Context context){
+        return context.getResources().getColor(R.color.color_tip_view_default);
     }
 
     static TipOptions from(TipOptions src){
