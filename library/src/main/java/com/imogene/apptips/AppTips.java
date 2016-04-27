@@ -90,8 +90,7 @@ public class AppTips {
         }else {
             mCurrentTipView.setMode(TipView.MODE_BELOW_TARGET);
         }
-        int padding = options.mPadding;
-        mCurrentTipView.setPadding(padding, padding, padding, padding);
+        mCurrentTipView.setSinglePadding(options.mPadding);
         mCurrentTipView.setMinWidth(options.mMinWidth);
         mCurrentTipView.setMaxWidth(options.mMaxWidth);
         mCurrentTipView.setMinHeight(options.mMinHeight);

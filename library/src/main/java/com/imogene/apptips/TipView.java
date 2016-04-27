@@ -63,7 +63,6 @@ public class TipView extends TextView {
         C = new PointF();
 
         setGravity(Gravity.CENTER);
-        setPadding(0, 0, 0, 0);
     }
 
     public void setColor(int color) {
@@ -92,20 +91,19 @@ public class TipView extends TextView {
         invalidate();
     }
 
-    @Override
-    public void setPadding(int left, int top, int right, int bottom) {
+    public void setSinglePadding(int padding){
         switch (mMode){
             case MODE_BELOW_TARGET:
-                super.setPadding(left, top + mPointerSize, right, bottom);
+                setPadding(padding, padding + mPointerSize, padding, padding);
                 break;
             case MODE_ABOVE_TARGET:
-                super.setPadding(left, top, right, bottom + mPointerSize);
+                super.setPadding(padding, padding, padding, padding + mPointerSize);
                 break;
             case MODE_TO_LEFT_TARGET:
-                super.setPadding(left, top, right + mPointerSize, bottom);
+                super.setPadding(padding, padding, padding + mPointerSize, padding);
                 break;
             case MODE_TO_RIGHT_TARGET:
-                super.setPadding(left + mPointerSize, top, right, bottom);
+                super.setPadding(padding + mPointerSize, padding, padding, padding);
                 break;
         }
     }
