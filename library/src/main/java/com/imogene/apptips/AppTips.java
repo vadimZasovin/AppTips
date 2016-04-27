@@ -254,7 +254,7 @@ public class AppTips {
         mOnTipChangeListener = listener;
     }
 
-    public static class Builder implements IBuilder {
+    public static class Builder{
 
         Activity mActivity;
         View mView;
@@ -276,20 +276,17 @@ public class AppTips {
             mView = view;
         }
 
-        @Override
-        public IBuilder setDimAmount(float dimAmount) {
+        public Builder setDimAmount(float dimAmount) {
             mDimAmount = dimAmount;
             return this;
         }
 
-        @Override
-        public IBuilder addTip(TipOptions options) {
+        public Builder addTip(TipOptions options) {
             mTips.add(options);
             return this;
         }
 
-        @Override
-        public IBuilder addTip(int viewId, CharSequence text) {
+        public Builder addTip(int viewId, CharSequence text) {
             if(mDefaultOptions == null){
                 throw new IllegalStateException("This method can be used only if the" +
                         "default TipOptions has been set.");
@@ -302,18 +299,15 @@ public class AppTips {
             return this;
         }
 
-        @Override
-        public IBuilder setDefaultOptions(TipOptions options) {
+        public Builder setDefaultOptions(TipOptions options) {
             mDefaultOptions = options;
             return this;
         }
 
-        @Override
         public AppTips build() {
             return new AppTips(this);
         }
 
-        @Override
         public AppTips show() {
             AppTips appTips = new AppTips(this);
             appTips.show();
