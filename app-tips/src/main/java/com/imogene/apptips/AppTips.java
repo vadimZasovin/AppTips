@@ -16,104 +16,127 @@ import java.util.List;
  */
 public class AppTips {
 
-    private Builder mBuilder;
-    private View.OnTouchListener mOnTouchListener;
-    private boolean mShown;
-    private int mCurrentTip;
-    private TipView mCurrentTipView;
+    private final Activity activity;
+    private final View view;
+    private final List<TipOptions> tips;
+    private final TipOptions defaultOptions;
+    private final float dimAmount;
 
-    private OnShowListener mOnShowListener;
-    private OnCloseListener mOnCloseListener;
-    private OnTipChangeListener mOnTipChangeListener;
+    private View.OnTouchListener onTouchListener;
+    private boolean shown;
+    private int currentTip;
+    private TipView currentTipView;
 
-    AppTips(Builder builder){
-        mBuilder = builder;
+    private OnShowListener onShowListener;
+    private OnCloseListener onCloseListener;
+    private OnTipChangeListener onTipChangeListener;
+
+    private AppTips(Builder builder){
+        activity = builder.activity;
+        view = builder.view;
+        tips = builder.tips;
+        defaultOptions = builder.defaultOptions;
+        dimAmount = builder.dimAmount;
     }
 
     public void show(){
-        if(mShown || mCurrentTip != 0 || mBuilder.mTips == null || mBuilder.mTips.size() == 0){
-            return;
+        if(!shown){
+            showTips();
         }
-        mOnTouchListener = new View.OnTouchListener() {
+    }
+
+    private void showTips(){
+        ensureOnTouchListener();
+        showTip(0);
+        shown = true;
+        if(onShowListener != null){
+            onShowListener.onShow();
+        }
+    }
+
+    private void ensureOnTouchListener(){
+        if(onTouchListener == null){
+            onTouchListener = createOnTouchListener();
+        }
+    }
+
+    private View.OnTouchListener createOnTouchListener(){
+        return new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 boolean handled = false;
                 if(event.getActionMasked() == MotionEvent.ACTION_OUTSIDE){
-                    showTip(++mCurrentTip);
+                    showTip(++currentTip);
                     handled = true;
                 }
                 return handled;
             }
         };
-        showTip(0);
-        mShown = true;
-        if(mOnShowListener != null){
-            mOnShowListener.onShow();
-        }
     }
 
     private void showTip(int tipIndex){
-        WindowManager windowManager = mBuilder.mActivity.getWindowManager();
+        WindowManager windowManager = activity.getWindowManager();
 
         if(tipIndex != 0){
-            windowManager.removeView(mCurrentTipView);
+            windowManager.removeView(currentTipView);
         }
 
-        if(tipIndex == mBuilder.mTips.size()){
-            if(mOnCloseListener != null){
-                mOnCloseListener.onClose(false);
+        if(tipIndex == tips.size()){
+            if(onCloseListener != null){
+                onCloseListener.onClose(false);
             }
 
-            mShown = false;
-            mCurrentTip = 0;
-            mCurrentTipView = null;
-            // AppTips object is prepared for the next showing
+            shown = false;
+            currentTip = 0;
+            currentTipView = null;
             return;
         }
 
-        TipOptions options = mBuilder.mTips.get(tipIndex);
+        TipOptions options = tips.get(tipIndex);
 
-        mCurrentTipView = new TipView(mBuilder.mActivity);
-        mCurrentTipView.setColor(options.mColor);
-        mCurrentTipView.setTextColor(options.mTextColor);
-        mCurrentTipView.setOnTouchListener(mOnTouchListener);
-        mCurrentTipView.setText(options.mText);
-        int align = options.mAlign;
-        if(align == TipOptions.ALIGN_CENTER_ABOVE ||
-                align == TipOptions.ALIGN_LEFT_ABOVE ||
-                align == TipOptions.ALIGN_RIGHT_ABOVE){
-            mCurrentTipView.setMode(TipView.MODE_ABOVE_TARGET);
-        }else if(align == TipOptions.ALIGN_LEFT){
-            mCurrentTipView.setMode(TipView.MODE_TO_LEFT_TARGET);
-        }else if(align == TipOptions.ALIGN_RIGHT){
-            mCurrentTipView.setMode(TipView.MODE_TO_RIGHT_TARGET);
-        }else {
-            mCurrentTipView.setMode(TipView.MODE_BELOW_TARGET);
-        }
-        mCurrentTipView.setSinglePadding(options.mPadding);
-        mCurrentTipView.setMinWidth(options.mMinWidth);
-        mCurrentTipView.setMaxWidth(options.mMaxWidth);
-        mCurrentTipView.setMinHeight(options.mMinHeight);
-        mCurrentTipView.setPointerPosition(options.mPointerPosition);
+        currentTipView = new TipView(activity);
+        currentTipView.setColor(options.color);
+        currentTipView.setTextColor(options.textColor);
+        currentTipView.setOnTouchListener(onTouchListener);
+        currentTipView.setText(options.text);
+        int align = options.align;
+        int mode = getTipViewMode(align);
+        currentTipView.setMode(mode);
+        currentTipView.setPaddingWithRespectToPointerSize(options.padding);
+        currentTipView.setMinWidth(options.minWidth);
+        currentTipView.setMaxWidth(options.maxWidth);
+        currentTipView.setMinHeight(options.minHeight);
+        currentTipView.setPointerPosition(options.pointerPosition);
 
-        View target;
-
-        if(mBuilder.mView != null){
-            target = mBuilder.mView.findViewById(options.mViewId);
-        }else {
-            target = mBuilder.mActivity.findViewById(options.mViewId);
-        }
-
+        int viewId = options.viewId;
+        View target = view != null ?
+                view.findViewById(viewId) :
+                activity.findViewById(viewId);
         if(target == null){
-            throw new IllegalStateException("View with id " + options.mViewId + " is not found.");
+            throw new IllegalStateException("View with id " + viewId + " is not found.");
         }
 
         WindowManager.LayoutParams layoutParams =
-                generateLayoutParams(mCurrentTipView, target, options);
-        windowManager.addView(mCurrentTipView, layoutParams);
+                generateLayoutParams(currentTipView, target, options);
+        windowManager.addView(currentTipView, layoutParams);
 
-        if(mOnTipChangeListener != null){
-            mOnTipChangeListener.onTipChanged(tipIndex, target);
+        if(onTipChangeListener != null){
+            onTipChangeListener.onTipChanged(tipIndex, target);
+        }
+    }
+
+    private int getTipViewMode(int align){
+        switch (align){
+            case TipOptions.ALIGN_CENTER_ABOVE:
+            case TipOptions.ALIGN_LEFT_ABOVE:
+            case TipOptions.ALIGN_RIGHT_ABOVE:
+                return TipView.MODE_ABOVE_TARGET;
+            case TipOptions.ALIGN_LEFT:
+                return TipView.MODE_TO_LEFT_TARGET;
+            case TipOptions.ALIGN_RIGHT:
+                return TipView.MODE_TO_RIGHT_TARGET;
+            default:
+                return TipView.MODE_BELOW_TARGET;
         }
     }
 
@@ -127,20 +150,18 @@ public class AppTips {
         layoutParams.windowAnimations = android.R.style.Animation_Dialog;
         layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-        float dimAmount = mBuilder.mDimAmount;
         if(dimAmount > 0){
             layoutParams.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
             layoutParams.dimAmount = dimAmount;
         }
 
-        // calculate position for the window
         final float targetX = target.getX();
         final float targetY = target.getY();
 
-        final int verticalMargin = options.mVerticalMargin;
-        final int horizontalMargin = options.mHorizontalMargin;
+        final int verticalMargin = options.verticalMargin;
+        final int horizontalMargin = options.horizontalMargin;
 
-        switch (options.mAlign){
+        switch (options.align){
             case TipOptions.ALIGN_LEFT_BELOW:
                 layoutParams.gravity = Gravity.TOP | Gravity.START;
                 layoutParams.x = (int) targetX + horizontalMargin;
@@ -227,79 +248,77 @@ public class AppTips {
     }
 
     public void close(){
-        if(mCurrentTipView != null){
-            WindowManager windowManager = mBuilder.mActivity.getWindowManager();
-            windowManager.removeView(mCurrentTipView);
+        if(currentTipView != null){
+            WindowManager windowManager = activity.getWindowManager();
+            windowManager.removeView(currentTipView);
 
-            if(mOnCloseListener != null) {
-                mOnCloseListener.onClose(true);
+            if(onCloseListener != null) {
+                onCloseListener.onClose(true);
             }
 
-            mShown = false;
-            mCurrentTip = 0;
-            mCurrentTipView = null;
+            shown = false;
+            currentTip = 0;
+            currentTipView = null;
         }
     }
 
     public void setOnShowListener(OnShowListener listener) {
-        mOnShowListener = listener;
+        onShowListener = listener;
     }
 
     public void setOnCloseListener(OnCloseListener listener) {
-        mOnCloseListener = listener;
+        onCloseListener = listener;
     }
 
-    public void setOnChangeTipListener(OnTipChangeListener listener) {
-        mOnTipChangeListener = listener;
+    public void setOnTipChangeListener(OnTipChangeListener listener) {
+        onTipChangeListener = listener;
     }
 
     public static class Builder{
 
-        Activity mActivity;
-        View mView;
-        List<TipOptions> mTips;
-        TipOptions mDefaultOptions;
-        float mDimAmount = -1f;
+        final Activity activity;
+        final View view;
+        final List<TipOptions> tips;
+        TipOptions defaultOptions;
+        float dimAmount = -1f;
 
-        private Builder(){
-            mTips = new ArrayList<>();
+        private Builder(Activity activity, View view){
+            tips = new ArrayList<>();
+            this.activity = activity;
+            this.view = null;
         }
 
         public Builder(Activity activity){
-            this();
-            mActivity = activity;
+            this(activity, null);
         }
 
-        public Builder(Activity activity, View view){
-            this(activity);
-            mView = view;
+        public Builder(View view){
+            this((Activity) view.getContext(), view);
         }
 
-        public Builder setDimAmount(float dimAmount) {
-            mDimAmount = dimAmount;
+        public Builder dimAmount(float dimAmount) {
+            this.dimAmount = dimAmount;
             return this;
         }
 
-        public Builder addTip(TipOptions options) {
-            mTips.add(options);
+        public Builder tip(TipOptions options) {
+            tips.add(options);
             return this;
         }
 
-        public Builder addTip(int viewId, CharSequence text) {
-            if(mDefaultOptions == null){
-                throw new IllegalStateException("This method can be used only if the" +
-                        "default TipOptions has been set.");
+        public Builder tip(int viewId, CharSequence text) {
+            if(defaultOptions == null){
+                throw new IllegalStateException("Default tip options must be set");
             }
-
-            TipOptions options = TipOptions.from(mDefaultOptions);
-            options.mViewId = viewId;
-            options.mText = text;
-            mTips.add(options);
+            TipOptions options = TipOptions.from(defaultOptions);
+            options.viewId = viewId;
+            options.text = text;
+            tips.add(options);
             return this;
         }
 
-        public Builder setDefaultOptions(TipOptions options) {
-            mDefaultOptions = options;
+        public Builder defaultOptions(TipOptions options) {
+            defaultOptions = options;
             return this;
         }
 
@@ -316,37 +335,40 @@ public class AppTips {
 
     private abstract class LayoutAdjuster implements ViewTreeObserver.OnGlobalLayoutListener{
 
-        private View mTarget;
-        private WindowManager.LayoutParams mLayoutParams;
+        private View target;
+        private WindowManager.LayoutParams layoutParams;
 
         LayoutAdjuster(View target, WindowManager.LayoutParams layoutParams){
-            mTarget = target;
-            mLayoutParams = layoutParams;
+            this.target = target;
+            this.layoutParams = layoutParams;
         }
 
         @Override
         public void onGlobalLayout() {
-            onAdjustLayout(mTarget, mLayoutParams);
-            mBuilder.mActivity.getWindowManager().updateViewLayout(mCurrentTipView, mLayoutParams);
-            mCurrentTipView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            onAdjustLayout(target, layoutParams);
+            activity.getWindowManager().updateViewLayout(currentTipView, layoutParams);
+            currentTipView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
         }
 
         void scheduleAdjusting(){
-            mCurrentTipView.getViewTreeObserver().addOnGlobalLayoutListener(this);
+            currentTipView.getViewTreeObserver().addOnGlobalLayoutListener(this);
         }
 
         abstract void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams);
     }
 
     public interface OnShowListener{
+
         void onShow();
     }
 
     public interface OnCloseListener{
+
         void onClose(boolean cancelled);
     }
 
     public interface OnTipChangeListener{
+
         void onTipChanged(int index, View target);
     }
 }

@@ -20,42 +20,42 @@ public final class TipOptions {
     public static final int ALIGN_LEFT = 7;
     public static final int ALIGN_RIGHT = 8;
 
-
     private static final int DEFAULT_PADDING = 4;
     private static final int DEFAULT_MIN_HEIGHT = 36;
     private static final int DEFAULT_MIN_WIDTH = 140;
     private static final int DEFAULT_MAX_WIDTH = 250;
 
-    int mColor;
-    int mTextColor;
-    int mPadding;
-    int mAlign;
-    int mMinHeight;
-    int mMinWidth;
-    int mMaxWidth;
-    float mPointerPosition;
-    int mVerticalMargin;
-    int mHorizontalMargin;
-    CharSequence mText; // required option
-    int mViewId; // required option
+    int color;
+    int textColor;
+    int padding;
+    int align;
+    int minHeight;
+    int minWidth;
+    int maxWidth;
+    float pointerPosition;
+    int verticalMargin;
+    int horizontalMargin;
+    CharSequence text;
+    int viewId;
 
-    TipOptions(){}
+    private TipOptions(){}
 
     public static TipOptions create(Context context){
         TipOptions options = new TipOptions();
-        options.mColor = obtainDefaultColor(context);
-        options.mTextColor = Color.WHITE;
-        options.mPadding = Util.convertDpInPixels(context, DEFAULT_PADDING);
-        options.mAlign = ALIGN_LEFT_BELOW;
-        options.mMinHeight = Util.convertDpInPixels(context, DEFAULT_MIN_HEIGHT);
-        options.mMinWidth = Util.convertDpInPixels(context, DEFAULT_MIN_WIDTH);
-        options.mMaxWidth = Util.convertDpInPixels(context, DEFAULT_MAX_WIDTH);
-        options.mPointerPosition = 0.5f;
-        options.mVerticalMargin = 0;
-        options.mHorizontalMargin = 0;
+        options.color = obtainDefaultColor(context);
+        options.textColor = Color.WHITE;
+        options.padding = Util.convertDpInPixels(context, DEFAULT_PADDING);
+        options.align = ALIGN_LEFT_BELOW;
+        options.minHeight = Util.convertDpInPixels(context, DEFAULT_MIN_HEIGHT);
+        options.minWidth = Util.convertDpInPixels(context, DEFAULT_MIN_WIDTH);
+        options.maxWidth = Util.convertDpInPixels(context, DEFAULT_MAX_WIDTH);
+        options.pointerPosition = 0.5f;
+        options.verticalMargin = 0;
+        options.horizontalMargin = 0;
         return options;
     }
 
+    @SuppressWarnings("ResourceType")
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private static int obtainDefaultColor(Context context){
         boolean isPostLollipop = Util.checkApiVersion(Build.VERSION_CODES.LOLLIPOP);
@@ -94,80 +94,79 @@ public final class TipOptions {
 
     static TipOptions from(TipOptions src){
         TipOptions options = new TipOptions();
-        options.mColor = src.mColor;
-        options.mTextColor = src.mTextColor;
-        options.mPadding = src.mPadding;
-        options.mAlign = src.mAlign;
-        options.mMinHeight = src.mMinHeight;
-        options.mMinWidth = src.mMinWidth;
-        options.mMaxWidth = src.mMaxWidth;
-        options.mPointerPosition = src.mPointerPosition;
-        options.mVerticalMargin = src.mVerticalMargin;
-        options.mHorizontalMargin = src.mHorizontalMargin;
+        options.color = src.color;
+        options.textColor = src.textColor;
+        options.padding = src.padding;
+        options.align = src.align;
+        options.minHeight = src.minHeight;
+        options.minWidth = src.minWidth;
+        options.maxWidth = src.maxWidth;
+        options.pointerPosition = src.pointerPosition;
+        options.verticalMargin = src.verticalMargin;
+        options.horizontalMargin = src.horizontalMargin;
         return options;
     }
 
-    public TipOptions setColor(int color){
-        mColor = color;
+    public TipOptions color(int color){
+        this.color = color;
         return this;
     }
 
-    public TipOptions setTextColor(int textColor){
-        mTextColor = textColor;
+    public TipOptions textColor(int textColor){
+        this.textColor = textColor;
         return this;
     }
 
-    public TipOptions setPadding(int padding){
-        mPadding = padding;
+    public TipOptions padding(int padding){
+        this.padding = padding;
         return this;
     }
 
-    public TipOptions setAlign(int align){
+    public TipOptions align(int align){
         if(align < ALIGN_LEFT_ABOVE || align > ALIGN_RIGHT){
             throw new IllegalArgumentException("Unsupported align constant.");
         }
-        mAlign = align;
+        this.align = align;
         return this;
     }
 
-    public TipOptions setMinHeight(int minHeight){
-        mMinHeight = minHeight;
+    public TipOptions minHeight(int minHeight){
+        this.minHeight = minHeight;
         return this;
     }
 
-    public TipOptions setMinWidth(int minWidth){
-        mMinWidth = minWidth;
+    public TipOptions minWidth(int minWidth){
+        this.minWidth = minWidth;
         return this;
     }
 
-    public TipOptions setMaxWidth(int maxWidth){
-        mMaxWidth = maxWidth;
+    public TipOptions maxWidth(int maxWidth){
+        this.maxWidth = maxWidth;
         return this;
     }
 
-    public TipOptions setPointerPosition(float position){
-        mPointerPosition = position;
+    public TipOptions pointerPosition(float position){
+        pointerPosition = position;
         return this;
     }
 
-    public TipOptions setVerticalMargin(int verticalMargin){
-        mVerticalMargin = verticalMargin;
+    public TipOptions verticalMargin(int verticalMargin){
+        this.verticalMargin = verticalMargin;
         return this;
     }
 
-    public TipOptions setHorizontalMargin(int horizontalMargin){
-        mHorizontalMargin = horizontalMargin;
+    public TipOptions horizontalMargin(int horizontalMargin){
+        this.horizontalMargin = horizontalMargin;
         return this;
     }
 
-    public TipOptions setText(CharSequence text){
-        mText = text;
+    public TipOptions text(CharSequence text){
+        this.text = text;
         return this;
     }
 
-    public TipOptions setTarget(int viewId){
-        mViewId = viewId;
+    public TipOptions target(int viewId){
+        this.viewId = viewId;
         return this;
     }
 }
-

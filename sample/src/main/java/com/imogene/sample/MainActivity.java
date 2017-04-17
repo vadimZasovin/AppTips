@@ -23,28 +23,28 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 if(mAppTips == null){
                     mAppTips = new AppTips.Builder(MainActivity.this)
-                            .setDefaultOptions(TipOptions
+                            .defaultOptions(TipOptions
                                     .create(MainActivity.this)
-                                    .setVerticalMargin(16)
-                                    .setAlign(TipOptions.ALIGN_CENTER_BELOW))
-                            .addTip(R.id.text, "Marambra")
-                            .addTip(TipOptions.create(MainActivity.this)
-                                    .setAlign(TipOptions.ALIGN_CENTER_ABOVE)
-                                    .setHorizontalMargin(12)
-                                    .setVerticalMargin(12)
-                                    .setText("Birdman")
-                                    .setTarget(R.id.text2))
-                            .addTip(TipOptions.create(MainActivity.this)
-                                    .setAlign(TipOptions.ALIGN_LEFT)
-                                    .setMaxWidth(200)
-                                    .setMinWidth(100)
-                                    .setHorizontalMargin(12)
-                                    .setVerticalMargin(12)
-                                    .setColor(getResources().getColor(android.R.color.holo_green_dark))
-                                    .setTextColor(getResources().getColor(android.R.color.darker_gray))
-                                    .setTarget(R.id.text1)
-                                    .setText("Beautiful"))
-                            .setDimAmount(0.3f)
+                                    .verticalMargin(16)
+                                    .align(TipOptions.ALIGN_CENTER_BELOW))
+                            .tip(R.id.text, "Marambra")
+                            .tip(TipOptions.create(MainActivity.this)
+                                    .align(TipOptions.ALIGN_CENTER_ABOVE)
+                                    .horizontalMargin(12)
+                                    .verticalMargin(12)
+                                    .text("Birdman")
+                                    .target(R.id.text2))
+                            .tip(TipOptions.create(MainActivity.this)
+                                    .align(TipOptions.ALIGN_LEFT)
+                                    .maxWidth(200)
+                                    .minWidth(100)
+                                    .horizontalMargin(12)
+                                    .verticalMargin(12)
+                                    .color(getResources().getColor(android.R.color.holo_green_dark))
+                                    .textColor(getResources().getColor(android.R.color.darker_gray))
+                                    .target(R.id.text1)
+                                    .text("Beautiful"))
+                            .dimAmount(0.3f)
                             .show();
                 }else {
                     mAppTips.show();
@@ -59,12 +59,6 @@ public class MainActivity extends Activity {
                 mAppTips.close();
             }
         });
-
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
 
     }
 }
