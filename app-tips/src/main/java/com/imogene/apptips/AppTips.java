@@ -19,7 +19,6 @@ public class AppTips {
     private final Activity activity;
     private final View view;
     private final List<TipOptions> tips;
-    private final TipOptions defaultOptions;
     private final float dimAmount;
 
     private View.OnTouchListener onTouchListener;
@@ -35,7 +34,6 @@ public class AppTips {
         activity = builder.activity;
         view = builder.view;
         tips = builder.tips;
-        defaultOptions = builder.defaultOptions;
         dimAmount = builder.dimAmount;
     }
 
@@ -279,13 +277,13 @@ public class AppTips {
         final Activity activity;
         final View view;
         final List<TipOptions> tips;
-        TipOptions defaultOptions;
         float dimAmount = -1f;
+        private TipOptions defaultOptions;
 
         private Builder(Activity activity, View view){
             tips = new ArrayList<>();
             this.activity = activity;
-            this.view = null;
+            this.view = view;
         }
 
         public Builder(Activity activity){
@@ -327,7 +325,7 @@ public class AppTips {
         }
 
         public AppTips show() {
-            AppTips appTips = new AppTips(this);
+            AppTips appTips = build();
             appTips.show();
             return appTips;
         }
@@ -335,8 +333,8 @@ public class AppTips {
 
     private abstract class LayoutAdjuster implements ViewTreeObserver.OnGlobalLayoutListener{
 
-        private View target;
-        private WindowManager.LayoutParams layoutParams;
+        private final View target;
+        private final WindowManager.LayoutParams layoutParams;
 
         LayoutAdjuster(View target, WindowManager.LayoutParams layoutParams){
             this.target = target;
