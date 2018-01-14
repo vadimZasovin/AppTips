@@ -23,16 +23,16 @@ class TipView extends AppCompatTextView {
     private static final int POINTER_SIZE_DP = 12;
     private static final int PADDING_DP = 4;
 
-    private int pointerSize;
+    private final int pointerSize;
     private float pointerPosition = 0.5f;
     private int mode;
-    private Paint paint;
-    private Path path;
-    private ShapeDrawable drawable;
+    private final Paint paint;
+    private final Path path;
+    private final ShapeDrawable drawable;
 
-    private PointF A;
-    private PointF B;
-    private PointF C;
+    private final PointF A;
+    private final PointF B;
+    private final PointF C;
 
     TipView(Context context) {
         super(context);
@@ -135,9 +135,9 @@ class TipView extends AppCompatTextView {
             width += pointerSize;
         }
 
-        super.onMeasure(
-                MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED),
-                MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED));
+        int widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED);
+        int heightSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED);
+        super.onMeasure(widthSpec, heightSpec);
     }
 
     @Override

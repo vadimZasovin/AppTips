@@ -21,8 +21,6 @@ public class AppTips {
     private final List<TipOptions> tips;
     private final float dimAmount;
 
-    private View.OnTouchListener onTouchListener;
-    private boolean shown;
     private int currentTip;
     private TipView currentTipView;
 
@@ -37,56 +35,45 @@ public class AppTips {
         dimAmount = builder.dimAmount;
     }
 
+    public boolean isShown(){
+        return currentTipView != null;
+    }
+
     public void show(){
-        if(!shown){
-            showTips();
+        if(!isShown()){
+            showTip(0);
+            notifyShown();
         }
     }
 
-    private void showTips(){
-        ensureOnTouchListener();
-        showTip(0);
-        shown = true;
+    private void notifyShown(){
         if(onShowListener != null){
             onShowListener.onShow();
         }
     }
 
-    private void ensureOnTouchListener(){
-        if(onTouchListener == null){
-            onTouchListener = createOnTouchListener();
-        }
-    }
-
-    private View.OnTouchListener createOnTouchListener(){
-        return new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                boolean handled = false;
-                if(event.getActionMasked() == MotionEvent.ACTION_OUTSIDE){
-                    showTip(++currentTip);
-                    handled = true;
-                }
-                return handled;
+    private final View.OnTouchListener onTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            boolean handled = false;
+            if(event.getActionMasked() == MotionEvent.ACTION_OUTSIDE){
+                showTip(++currentTip);
+                handled = true;
             }
-        };
-    }
+            return handled;
+        }
+    };
 
     private void showTip(int tipIndex){
         WindowManager windowManager = activity.getWindowManager();
 
-        if(tipIndex != 0){
+        if(currentTipView != null){
             windowManager.removeView(currentTipView);
         }
 
         if(tipIndex == tips.size()){
-            if(onCloseListener != null){
-                onCloseListener.onClose(false);
-            }
-
-            shown = false;
-            currentTip = 0;
-            currentTipView = null;
+            notifyClosed(false);
+            reset();
             return;
         }
 
@@ -107,20 +94,22 @@ public class AppTips {
         currentTipView.setPointerPosition(options.pointerPosition);
 
         int viewId = options.viewId;
-        View target = view != null ?
-                view.findViewById(viewId) :
-                activity.findViewById(viewId);
-        if(target == null){
-            throw new IllegalStateException("View with id " + viewId + " is not found.");
-        }
+        View target = getTarget(viewId);
 
-        WindowManager.LayoutParams layoutParams =
-                generateLayoutParams(currentTipView, target, options);
-        windowManager.addView(currentTipView, layoutParams);
+        WindowManager.LayoutParams lp = getLayoutParams(currentTipView, target, options);
+        windowManager.addView(currentTipView, lp);
+        notifyTipChanged(tipIndex, target);
+    }
 
-        if(onTipChangeListener != null){
-            onTipChangeListener.onTipChanged(tipIndex, target);
+    private void notifyClosed(boolean cancelled){
+        if(onCloseListener != null){
+            onCloseListener.onClose(cancelled);
         }
+    }
+
+    private void reset(){
+        currentTip = 0;
+        currentTipView = null;
     }
 
     private int getTipViewMode(int align){
@@ -138,19 +127,29 @@ public class AppTips {
         }
     }
 
-    private WindowManager.LayoutParams generateLayoutParams(final View tipView, View target,
-                                                            TipOptions options){
-        WindowManager.LayoutParams layoutParams = new WindowManager
-                .LayoutParams(WindowManager.LayoutParams.TYPE_APPLICATION);
-        layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
-        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
-        layoutParams.format = PixelFormat.TRANSLUCENT;
-        layoutParams.windowAnimations = android.R.style.Animation_Dialog;
-        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+    private View getTarget(int targetId){
+        View target = view != null ?
+                view.findViewById(targetId) :
+                activity.findViewById(targetId);
+        if(target == null){
+            throw new IllegalStateException("Target is not found.");
+        }
+        return target;
+    }
+
+    private WindowManager.LayoutParams getLayoutParams(final View tipView, View target,
+                                                       TipOptions options){
+        int windowType = WindowManager.LayoutParams.TYPE_APPLICATION;
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(windowType);
+        lp.width = WindowManager.LayoutParams.WRAP_CONTENT;
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        lp.format = PixelFormat.TRANSLUCENT;
+        lp.windowAnimations = android.R.style.Animation_Dialog;
+        lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
         if(dimAmount > 0){
-            layoutParams.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-            layoutParams.dimAmount = dimAmount;
+            lp.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+            lp.dimAmount = dimAmount;
         }
 
         final float targetX = target.getX();
@@ -161,102 +160,102 @@ public class AppTips {
 
         switch (options.align){
             case TipOptions.ALIGN_LEFT_BELOW:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                layoutParams.x = (int) targetX + horizontalMargin;
-                layoutParams.y = (int) (targetY + target.getHeight() + verticalMargin);
+                lp.gravity = Gravity.TOP | Gravity.START;
+                lp.x = (int) targetX + horizontalMargin;
+                lp.y = (int) (targetY + target.getHeight() + verticalMargin);
                 break;
             case TipOptions.ALIGN_RIGHT_BELOW:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = target.getWidth() - tipView.getWidth();
                         layoutParams.x = (int) (targetX + delta + horizontalMargin);
                     }
-                }.scheduleAdjusting();
-                layoutParams.y = (int) (targetY + target.getHeight() + verticalMargin);
+                }.schedule();
+                lp.y = (int) (targetY + target.getHeight() + verticalMargin);
                 break;
             case TipOptions.ALIGN_CENTER_BELOW:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = (target.getWidth() - tipView.getWidth()) / 2;
                         layoutParams.x = (int) (targetX + delta + horizontalMargin);
                     }
-                }.scheduleAdjusting();
-                layoutParams.y = (int) (targetY + target.getHeight() + verticalMargin);
+                }.schedule();
+                lp.y = (int) (targetY + target.getHeight() + verticalMargin);
                 break;
             case TipOptions.ALIGN_LEFT_ABOVE:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                layoutParams.x = (int) (targetX + horizontalMargin);
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                lp.x = (int) (targetX + horizontalMargin);
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         layoutParams.y = (int) (targetY - tipView.getHeight() - verticalMargin);
                     }
-                }.scheduleAdjusting();
+                }.schedule();
                 break;
             case TipOptions.ALIGN_RIGHT_ABOVE:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = target.getWidth() - tipView.getWidth();
                         layoutParams.x = (int) (targetX + delta + horizontalMargin);
                         layoutParams.y = (int) (targetY - tipView.getHeight() - verticalMargin);
                     }
-                }.scheduleAdjusting();
+                }.schedule();
                 break;
             case TipOptions.ALIGN_CENTER_ABOVE:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         int delta = (target.getWidth() - tipView.getWidth()) / 2;
                         layoutParams.x = (int) (targetX + delta + horizontalMargin);
                         layoutParams.y = (int) (targetY - tipView.getHeight() - verticalMargin);
                     }
-                }.scheduleAdjusting();
+                }.schedule();
                 break;
             case TipOptions.ALIGN_LEFT:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         layoutParams.x = (int) (targetX - tipView.getWidth() - horizontalMargin);
                         int delta = (target.getHeight() - tipView.getHeight()) / 2;
                         layoutParams.y = (int) (targetY + delta + verticalMargin);
                     }
-                }.scheduleAdjusting();
+                }.schedule();
                 break;
             case TipOptions.ALIGN_RIGHT:
-                layoutParams.gravity = Gravity.TOP | Gravity.START;
-                new LayoutAdjuster(target, layoutParams){
+                lp.gravity = Gravity.TOP | Gravity.START;
+                new LayoutAdjuster(target, lp){
                     @Override
                     void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams) {
                         layoutParams.x = (int) (targetX + target.getWidth() + horizontalMargin);
                         int delta = (target.getHeight() - tipView.getHeight()) / 2;
                         layoutParams.y = (int) (targetY + delta + verticalMargin);
                     }
-                }.scheduleAdjusting();
+                }.schedule();
         }
 
-        return layoutParams;
+        return lp;
+    }
+
+    private void notifyTipChanged(int index, View target){
+        if(onTipChangeListener != null){
+            onTipChangeListener.onTipChanged(index, target);
+        }
     }
 
     public void close(){
-        if(currentTipView != null){
+        if(isShown()){
             WindowManager windowManager = activity.getWindowManager();
             windowManager.removeView(currentTipView);
-
-            if(onCloseListener != null) {
-                onCloseListener.onClose(true);
-            }
-
-            shown = false;
-            currentTip = 0;
-            currentTipView = null;
+            notifyClosed(true);
+            reset();
         }
     }
 
@@ -306,7 +305,7 @@ public class AppTips {
 
         public Builder tip(int viewId, CharSequence text) {
             if(defaultOptions == null){
-                throw new IllegalStateException("Default tip options must be set");
+                throw new IllegalStateException("Default options must be set");
             }
             TipOptions options = TipOptions.from(defaultOptions);
             options.viewId = viewId;
@@ -321,6 +320,9 @@ public class AppTips {
         }
 
         public AppTips build() {
+            if(tips.isEmpty()){
+                throw new IllegalStateException("At least one tip must be specified.");
+            }
             return new AppTips(this);
         }
 
@@ -348,7 +350,7 @@ public class AppTips {
             currentTipView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
         }
 
-        void scheduleAdjusting(){
+        void schedule(){
             currentTipView.getViewTreeObserver().addOnGlobalLayoutListener(this);
         }
 
