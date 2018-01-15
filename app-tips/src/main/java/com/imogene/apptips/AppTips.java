@@ -2,6 +2,7 @@ package com.imogene.apptips;
 
 import android.app.Activity;
 import android.graphics.PixelFormat;
+import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -46,6 +47,17 @@ public class AppTips {
         }
     }
 
+    public void showNextTip(){
+        if(!isShown()){
+            show();
+        } else {
+            int size = tips.size();
+            if(currentTip < size - 1){
+                showTip(++currentTip);
+            }
+        }
+    }
+
     private void notifyShown(){
         if(onShowListener != null){
             onShowListener.onShow();
@@ -53,14 +65,57 @@ public class AppTips {
     }
 
     private final View.OnTouchListener onTouchListener = new View.OnTouchListener() {
+
+        private final RectF viewBounds = new RectF();
+        private boolean isPressed = false;
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             boolean handled = false;
-            if(event.getActionMasked() == MotionEvent.ACTION_OUTSIDE){
+            boolean showNextTip = false;
+            int action = event.getActionMasked();
+            switch (action){
+                case MotionEvent.ACTION_OUTSIDE:
+                    handled = true;
+                    showNextTip = true;
+                    break;
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_MOVE:
+                    updateViewBounds(v);
+                    final int left = v.getLeft();
+                    final int top = v.getTop();
+                    final float eventX = left + event.getX();
+                    final float eventY = top + event.getY();
+                    if(action == MotionEvent.ACTION_MOVE){
+                        if(isPressed && !viewBounds.contains(eventX, eventY)){
+                            isPressed = false;
+                        }
+                        break;
+                    }
+                    if(viewBounds.contains(eventX, eventY)){
+                        handled = true;
+                        if(action == MotionEvent.ACTION_DOWN){
+                            isPressed = true;
+                        } else if(isPressed) {
+                            isPressed = false;
+                            showNextTip = !v.performClick();
+                        }
+                    }
+                    break;
+            }
+            if(showNextTip){
                 showTip(++currentTip);
-                handled = true;
             }
             return handled;
+        }
+
+        private void updateViewBounds(View view){
+            final int left = view.getLeft();
+            final int top = view.getTop();
+            final int right = view.getRight();
+            final int bottom = view.getBottom();
+            viewBounds.set(left, top, right, bottom);
         }
     };
 
