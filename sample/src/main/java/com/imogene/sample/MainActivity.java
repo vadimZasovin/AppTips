@@ -35,7 +35,7 @@ public class MainActivity extends Activity {
                                     .text("Birdman")
                                     .target(R.id.text2))
                             .tip(TipOptions.create(MainActivity.this)
-                                    .align(TipOptions.ALIGN_LEFT)
+                                    .align(TipOptions.ALIGN_LEFT_BELOW)
                                     .maxWidth(200)
                                     .minWidth(100)
                                     .horizontalMargin(12)
