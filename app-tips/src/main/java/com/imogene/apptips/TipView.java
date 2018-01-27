@@ -175,6 +175,12 @@ class TipView extends AppCompatTextView {
             C.set(pointerSize, cyh);
             drawable.setBounds(pointerSize, 0, w, h);
         }
+    }
 
+    @Override
+    public boolean performClick() {
+        // override this method in order to
+        // disable IDE warnings about it.
+        return super.performClick();
     }
 }

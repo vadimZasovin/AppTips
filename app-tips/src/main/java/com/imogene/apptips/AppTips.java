@@ -350,7 +350,8 @@ public class AppTips {
 
         public Builder tip(int viewId, CharSequence text) {
             if(defaultOptions == null){
-                throw new IllegalStateException("Default options must be set");
+                throw new IllegalStateException(
+                        "Default options must be set.");
             }
             TipOptions options = TipOptions.from(defaultOptions);
             options.viewId = viewId;
@@ -366,7 +367,8 @@ public class AppTips {
 
         public AppTips build() {
             if(tips.isEmpty()){
-                throw new IllegalStateException("At least one tip must be specified.");
+                throw new IllegalStateException(
+                        "At least one tip must be specified.");
             }
             return new AppTips(this);
         }
@@ -376,30 +378,6 @@ public class AppTips {
             appTips.show();
             return appTips;
         }
-    }
-
-    private abstract class LayoutAdjuster implements ViewTreeObserver.OnGlobalLayoutListener{
-
-        private final View target;
-        private final WindowManager.LayoutParams layoutParams;
-
-        LayoutAdjuster(View target, WindowManager.LayoutParams layoutParams){
-            this.target = target;
-            this.layoutParams = layoutParams;
-            ViewTreeObserver observer = currentView.getViewTreeObserver();
-            observer.addOnGlobalLayoutListener(this);
-        }
-
-        @Override
-        public void onGlobalLayout() {
-            onAdjustLayout(target, layoutParams);
-            WindowManager manager = getWindowManager();
-            manager.updateViewLayout(currentView, layoutParams);
-            ViewTreeObserver observer = currentView.getViewTreeObserver();
-            observer.removeOnGlobalLayoutListener(this);
-        }
-
-        abstract void onAdjustLayout(View target, WindowManager.LayoutParams layoutParams);
     }
 
     public interface OnCloseListener{
