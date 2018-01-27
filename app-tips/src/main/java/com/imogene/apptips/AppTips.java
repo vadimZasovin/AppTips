@@ -301,7 +301,7 @@ public class AppTips {
      */
     public void close(){
         if(isShown()){
-            WindowManager windowManager = activity.getWindowManager();
+            WindowManager windowManager = getWindowManager();
             windowManager.removeView(currentView);
             notifyClosed(true);
             reset();
