@@ -81,7 +81,7 @@ public class AppTips {
         private boolean isPressed = false;
 
         @Override
-        public boolean onTouch(View v, MotionEvent event) {
+        public boolean onTouch(View view, MotionEvent event) {
             boolean handled = false;
             boolean showNextTip = false;
             int action = event.getActionMasked();
@@ -112,7 +112,7 @@ public class AppTips {
                             isPressed = true;
                         } else if(isPressed) {
                             isPressed = false;
-                            showNextTip = !v.performClick();
+                            showNextTip = !view.performClick();
                         }
                     }
                     break;
