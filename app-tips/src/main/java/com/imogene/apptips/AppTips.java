@@ -4,15 +4,19 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.graphics.RectF;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
+import android.support.v4.view.ViewCompat;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.AbsoluteLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +28,8 @@ public final class AppTips {
 
     private static final float DIM_AMOUNT = 0.3F;
 
+    private final Context context;
+    private final WindowManager windowManager;
     private final Activity activity;
     private final Fragment fragment;
     private final android.support.v4.app.Fragment supportFragment;
@@ -31,43 +37,64 @@ public final class AppTips {
 
     private int currentIndex;
     private View currentView;
+    private Point position = new Point();
 
     private OnCloseListener onCloseListener;
     private OnTipChangeListener onTipChangeListener;
 
     public AppTips(@NonNull Activity activity){
         Util.checkNonNullParameter(activity, "activity");
+        context = activity;
+        windowManager = activity.getWindowManager();
         this.activity = activity;
-        fragment = null;
-        supportFragment = null;
+        this.fragment = null;
+        this.supportFragment = null;
     }
 
     public AppTips(@NonNull Fragment fragment){
         Util.checkNonNullParameter(fragment, "fragment");
+        Activity activity = fragment.getActivity();
+        if(activity == null){
+            throw new IllegalArgumentException(
+                    "Fragment must be attached to activity.");
+        }
+        context = activity;
+        windowManager = activity.getWindowManager();
+        this.activity = null;
         this.fragment = fragment;
-        activity = null;
         supportFragment = null;
     }
 
     public AppTips(@NonNull android.support.v4.app.Fragment fragment){
         Util.checkNonNullParameter(fragment, "fragment");
-        this.supportFragment = fragment;
-        activity = null;
+        Activity activity = fragment.getActivity();
+        if(activity == null){
+            throw new IllegalArgumentException(
+                    "Fragment must be attached to activity.");
+        }
+        context = activity;
+        windowManager = activity.getWindowManager();
+        this.activity = null;
         this.fragment = null;
-    }
-
-    private Context getContext(){
-        return activity != null ? activity
-                : fragment != null ? fragment.getActivity()
-                : supportFragment.getActivity();
-    }
-
-    public Tip newTip(@IdRes int targetId, @StringRes int textRes){
-        return new Tip(getContext(), targetId, textRes);
+        supportFragment = fragment;
     }
 
     public Tip newTip(@IdRes int targetId, CharSequence text){
-        return new Tip(getContext(), targetId, text);
+        return new Tip(context, targetId, text);
+    }
+
+    public Tip newTip(@IdRes int targetId, @StringRes int textRes){
+        String text = context.getString(textRes);
+        return newTip(targetId, text);
+    }
+
+    public Tip newTip(View targetView, CharSequence text){
+        return new Tip(context, targetView, text);
+    }
+
+    public Tip newTip(View targetView, @StringRes int textRes){
+        String text = context.getString(textRes);
+        return newTip(targetView, text);
     }
 
     public void addTip(Tip tip){
@@ -109,7 +136,7 @@ public final class AppTips {
      */
     public void show(){
         if(!isShown()){
-            showTip(0);
+            showTips(0);
         }
     }
 
@@ -125,9 +152,122 @@ public final class AppTips {
         } else {
             int size = tips.size();
             if(currentIndex < size - 1){
-                showTip(++currentIndex);
+                showTips(++currentIndex);
             }
         }
+    }
+
+    /**
+     * Shows the next portion of tips with the given index
+     * from the list. This method also removes all currently
+     * shown tip views from the {@link WindowManager}.
+     */
+    private void showTips(int index){
+        removeTipViews();
+        if(index == tips.size()){
+            notifyClosed(false);
+            reset();
+            return;
+        }
+        Tip tip = tips.get(index);
+        if(tip.highlightingEnabled){
+            showWrapped(tip);
+        } else {
+            showSeparately(tip);
+        }
+    }
+
+    /**
+     * Removes all tip views from the WindowManager
+     * if there are any.
+     */
+    private void removeTipViews(){
+
+    }
+
+    private void showWrapped(Tip tip){
+        AbsoluteLayout wrapper = new AbsoluteLayout(context);
+        do {
+            View tipView = createTipView(tip);
+            int size = ViewGroup.LayoutParams.WRAP_CONTENT;
+            AbsoluteLayout.LayoutParams lp = new AbsoluteLayout.LayoutParams(size, size, 0, 0);
+            wrapper.addView(tipView, lp);
+            View targetView = findTargetViewForTip(tip);
+            adjustPosition(targetView, tipView, tip);
+            tip = tip.sibling;
+        } while (tip != null);
+        WindowManager.LayoutParams lp = getWrapperLayoutParams();
+        windowManager.addView(wrapper, lp);
+    }
+
+    private WindowManager.LayoutParams getWrapperLayoutParams(){
+        int windowType = WindowManager.LayoutParams.TYPE_APPLICATION;
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(windowType);
+        lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+        lp.format = PixelFormat.TRANSLUCENT;
+        lp.windowAnimations = android.R.style.Animation_Dialog;
+        lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        lp.dimAmount = DIM_AMOUNT;
+        return lp;
+    }
+
+    /**
+     * Shows tips by adding them directly into WindowManager
+     * without wrapping them into additional ViewGroup. This
+     * method is used if highlighting is disabled.
+     */
+    private void showSeparately(Tip tip){
+        do {
+            showConcreteTip(tip);
+            tip = tip.sibling;
+        } while (tip != null);
+    }
+
+    /**
+     * Shows a tip by adding tip view to the WindowManager.
+     */
+    private void showConcreteTip(Tip tip){
+        View tipView = createTipView(tip);
+        View targetView = findTargetViewForTip(tip);
+        WindowManager.LayoutParams lp = getTipViewLayoutParams();
+        windowManager.addView(tipView, lp);
+        adjustPosition(targetView, tipView, tip);
+    }
+
+    /**
+     * Creates new tip view according to the given tip options.
+     */
+    private TipView createTipView(Tip tip){
+        TipView tipView = new TipView(context);
+        tipView.setColor(tip.color);
+        tipView.setTextColor(tip.textColor);
+        tipView.setOnTouchListener(onTouchListener);
+        tipView.setText(tip.text);
+        int align = tip.align;
+        int mode = getTipViewMode(align);
+        tipView.setMode(mode);
+        tipView.setPadding(tip.padding);
+        tipView.setMinWidth(tip.minWidth);
+        tipView.setMaxWidth(tip.maxWidth);
+        tipView.setMinHeight(tip.minHeight);
+        tipView.setPointerPosition(tip.pointerPosition);
+        return tipView;
+    }
+
+    private WindowManager.LayoutParams getTipViewLayoutParams(){
+        int windowType = WindowManager.LayoutParams.TYPE_APPLICATION;
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(windowType);
+        lp.width = WindowManager.LayoutParams.WRAP_CONTENT;
+        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+        lp.gravity = Gravity.TOP | Gravity.START;
+        lp.format = PixelFormat.TRANSLUCENT;
+        lp.windowAnimations = android.R.style.Animation_Dialog;
+        lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
+        return lp;
     }
 
     private final View.OnTouchListener onTouchListener = new View.OnTouchListener() {
@@ -173,70 +313,11 @@ public final class AppTips {
                     break;
             }
             if(showNextTip){
-                showTip(++currentIndex);
+                showTips(++currentIndex);
             }
             return handled;
         }
     };
-
-    private void showTip(int tipIndex){
-        WindowManager windowManager = getWindowManager();
-        if(currentView != null){
-            windowManager.removeView(currentView);
-        }
-        if(tipIndex == tips.size()){
-            notifyClosed(false);
-            reset();
-            return;
-        }
-        Tip tip = tips.get(tipIndex);
-        boolean multipleTips = tip.sibling != null;
-        currentView = multipleTips ? createTipsLayout(tip) : createTipView(tip);
-
-        int viewId = tip.targetId;
-        View target = findTarget(viewId);
-
-        WindowManager.LayoutParams lp = getLayoutParams(target, currentView, tip);
-        windowManager.addView(currentView, lp);
-        notifyTipChanged(tipIndex, target);
-    }
-
-    private View createTipsLayout(Tip tip){
-        return null;
-    }
-
-    private TipView createTipView(Tip tip){
-        Context context = getContext();
-        TipView tipView = new TipView(context);
-        tipView.setColor(tip.color);
-        tipView.setTextColor(tip.textColor);
-        tipView.setOnTouchListener(onTouchListener);
-        tipView.setText(tip.text);
-        int align = tip.align;
-        int mode = getTipViewMode(align);
-        tipView.setMode(mode);
-        tipView.setPadding(tip.padding);
-        tipView.setMinWidth(tip.minWidth);
-        tipView.setMaxWidth(tip.maxWidth);
-        tipView.setMinHeight(tip.minHeight);
-        tipView.setPointerPosition(tip.pointerPosition);
-        return tipView;
-    }
-
-    private WindowManager getWindowManager(){
-        return activity.getWindowManager();
-    }
-
-    private void notifyClosed(boolean cancelled){
-        if(onCloseListener != null){
-            onCloseListener.onClose(cancelled);
-        }
-    }
-
-    private void reset(){
-        currentIndex = 0;
-        currentView = null;
-    }
 
     private int getTipViewMode(int align){
         switch (align){
@@ -253,8 +334,12 @@ public final class AppTips {
         }
     }
 
-    private View findTarget(int targetId){
-        View target = null;
+    private View findTargetViewForTip(Tip tip){
+        View target = tip.targetView;
+        if(target != null){
+            return target;
+        }
+        int targetId = tip.targetId;
         if(activity != null){
             target = activity.findViewById(targetId);
         } else {
@@ -275,91 +360,108 @@ public final class AppTips {
         return target;
     }
 
-    private WindowManager.LayoutParams getLayoutParams(View target, View tipView, Tip tip){
-        int windowType = WindowManager.LayoutParams.TYPE_APPLICATION;
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(windowType);
-        lp.width = WindowManager.LayoutParams.WRAP_CONTENT;
-        lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-        lp.format = PixelFormat.TRANSLUCENT;
-        lp.windowAnimations = android.R.style.Animation_Dialog;
-        lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-        if(tip.highlightingEnabled){
-            lp.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-            lp.dimAmount = DIM_AMOUNT;
+    private void notifyClosed(boolean cancelled){
+        if(onCloseListener != null){
+            onCloseListener.onClose(cancelled);
         }
-        scheduleAdjusting(target, tipView, tip, lp);
-        return lp;
     }
 
-    private void scheduleAdjusting(final View target, final View tipView,
-                                   final Tip options,
-                                   final WindowManager.LayoutParams lp){
-        ViewTreeObserver observer = tipView.getViewTreeObserver();
+    /**
+     * Listens for the first global layout event and adjusts the position
+     * of the given tip view according to dimensions and position of the
+     * target view and tip options.
+     */
+    private void adjustPosition(final View targetView, final View tipView, final Tip tip){
+        // in order to adjust tip view's position we need to know the dimensions of both:
+        // tip view and target view. If the tips are shown when the target view is
+        // already laid out we observe tip view, otherwise we observe target view.
+        final View viewToObserve = ViewCompat.isLaidOut(targetView) ? tipView : targetView;
+        ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                ViewTreeObserver observer = tipView.getViewTreeObserver();
+                ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
                 observer.removeOnGlobalLayoutListener(this);
-
-                final int targetX = (int) target.getX();
-                final int targetY = (int) target.getY();
-                final int targetHeight = target.getHeight();
-                final int targetWidth = target.getWidth();
-                final int tipHeight = tipView.getHeight();
-                final int tipWidth = tipView.getWidth();
-                final int offsetX = options.horizontalOffset;
-                final int offsetY = options.verticalOffset;
-                final int delta;
-
-                lp.gravity = Gravity.TOP | Gravity.START;
-                final int x, y;
-                switch (options.align){
-                    case Tip.ALIGN_LEFT_BELOW:
-                        x = targetX + offsetX;
-                        y = targetY + targetHeight + offsetY;
-                        break;
-                    case Tip.ALIGN_RIGHT_BELOW:
-                        delta = targetWidth - tipWidth;
-                        x = targetX + delta + offsetX;
-                        y = targetY + targetHeight + offsetY;
-                        break;
-                    case Tip.ALIGN_CENTER_BELOW:
-                        delta = (targetWidth - tipWidth) / 2;
-                        x = targetX + delta + offsetX;
-                        y = targetY + targetHeight + offsetY;
-                        break;
-                    case Tip.ALIGN_LEFT_ABOVE:
-                        x = targetX + offsetX;
-                        y = targetY - tipHeight - offsetY;
-                        break;
-                    case Tip.ALIGN_RIGHT_ABOVE:
-                        delta = targetWidth - tipWidth;
-                        x = targetX + delta + offsetX;
-                        y = targetY - tipHeight - offsetY;
-                        break;
-                    case Tip.ALIGN_CENTER_ABOVE:
-                        delta = (targetWidth - tipWidth) / 2;
-                        x = targetX + delta + offsetX;
-                        y = targetY - tipHeight - offsetY;
-                        break;
-                    case Tip.ALIGN_LEFT:
-                        x = targetX - tipWidth - offsetX;
-                        delta = (targetHeight - tipHeight) / 2;
-                        y = targetY + delta + offsetY;
-                        break;
-                    default:
-                        x = targetX + targetWidth + offsetX;
-                        delta = (targetHeight - tipHeight) / 2;
-                        y = targetY + delta + offsetY;
-                        break;
+                getTipViewPosition(targetView, tipView, tip);
+                ViewGroup.LayoutParams lp = tipView.getLayoutParams();
+                if(lp instanceof WindowManager.LayoutParams){
+                    WindowManager.LayoutParams wlp = (WindowManager.LayoutParams) lp;
+                    wlp.x = position.x; wlp.y = position.y;
+                    windowManager.updateViewLayout(tipView, lp);
+                } else if(lp instanceof AbsoluteLayout.LayoutParams){
+                    AbsoluteLayout.LayoutParams alp = (AbsoluteLayout.LayoutParams) lp;
+                    alp.x = position.x; alp.y = position.y;
+                    tipView.setLayoutParams(alp);
                 }
-
-                lp.x = x; lp.y = y;
-                WindowManager manager = getWindowManager();
-                manager.updateViewLayout(tipView, lp);
             }
         });
+    }
+
+    /**
+     * Calculates the absolute position for the given tip view
+     * according to the position of the target view and tip
+     * options. The calculated coordinates are written to the
+     * {@code position} field. This function can only be used
+     * if the target view and tip view are laid out and has
+     * their dimensions set.
+     */
+    private void getTipViewPosition(View targetView, View tipView, Tip tip){
+        final int targetX = (int) targetView.getX();
+        final int targetY = (int) targetView.getY();
+        final int targetHeight = targetView.getHeight();
+        final int targetWidth = targetView.getWidth();
+        final int tipHeight = tipView.getHeight();
+        final int tipWidth = tipView.getWidth();
+        final int offsetX = tip.horizontalOffset;
+        final int offsetY = tip.verticalOffset;
+        final int delta;
+        final int x, y;
+        switch (tip.align){
+            case Tip.ALIGN_LEFT_BELOW:
+                x = targetX + offsetX;
+                y = targetY + targetHeight + offsetY;
+                break;
+            case Tip.ALIGN_RIGHT_BELOW:
+                delta = targetWidth - tipWidth;
+                x = targetX + delta + offsetX;
+                y = targetY + targetHeight + offsetY;
+                break;
+            case Tip.ALIGN_CENTER_BELOW:
+                delta = (targetWidth - tipWidth) / 2;
+                x = targetX + delta + offsetX;
+                y = targetY + targetHeight + offsetY;
+                break;
+            case Tip.ALIGN_LEFT_ABOVE:
+                x = targetX + offsetX;
+                y = targetY - tipHeight - offsetY;
+                break;
+            case Tip.ALIGN_RIGHT_ABOVE:
+                delta = targetWidth - tipWidth;
+                x = targetX + delta + offsetX;
+                y = targetY - tipHeight - offsetY;
+                break;
+            case Tip.ALIGN_CENTER_ABOVE:
+                delta = (targetWidth - tipWidth) / 2;
+                x = targetX + delta + offsetX;
+                y = targetY - tipHeight - offsetY;
+                break;
+            case Tip.ALIGN_LEFT:
+                x = targetX - tipWidth - offsetX;
+                delta = (targetHeight - tipHeight) / 2;
+                y = targetY + delta + offsetY;
+                break;
+            default:
+                x = targetX + targetWidth + offsetX;
+                delta = (targetHeight - tipHeight) / 2;
+                y = targetY + delta + offsetY;
+                break;
+        }
+        position.set(x, y);
+    }
+
+    private void reset(){
+        currentIndex = 0;
+        currentView = null;
     }
 
     private void notifyTipChanged(int index, View target){
@@ -373,7 +475,6 @@ public final class AppTips {
      */
     public void close(){
         if(isShown()){
-            WindowManager windowManager = getWindowManager();
             windowManager.removeView(currentView);
             notifyClosed(true);
             reset();

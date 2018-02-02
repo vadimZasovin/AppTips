@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.support.annotation.IdRes;
 import android.support.annotation.StringRes;
+import android.view.View;
 
 /**
  * Created by Admin on 25.04.2016.
@@ -23,8 +24,10 @@ public final class Tip {
     public static final int ALIGN_LEFT = 7;
     public static final int ALIGN_RIGHT = 8;
 
-    final CharSequence text;
     final int targetId;
+    final View targetView;
+    final CharSequence text;
+
     int color;
     int textColor;
     int padding;
@@ -39,13 +42,21 @@ public final class Tip {
 
     Tip sibling;
 
-    Tip(Context context, @IdRes int targetId, @StringRes int textRes){
-        this(context, targetId, context.getString(textRes));
-    }
-
     Tip(Context context, @IdRes int targetId, CharSequence text){
         this.targetId = targetId;
+        this.targetView = null;
         this.text = text;
+        initializeDefaults(context);
+    }
+
+    Tip(Context context, View targetView, CharSequence text){
+        this.targetId = View.NO_ID;
+        this.targetView = targetView;
+        this.text = text;
+        initializeDefaults(context);
+    }
+
+    private void initializeDefaults(Context context){
         Resources resources = context.getResources();
         color = obtainDefaultColor(context);
         textColor = Color.WHITE;

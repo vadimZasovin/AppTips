@@ -27,7 +27,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.text).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                testSimpleTips();
+                testAdvancedTips();
             }
         });
     }
@@ -35,62 +35,48 @@ public class MainActivity extends Activity {
     private void testSimpleTips(){
         if(appTips == null){
             appTips = new AppTips(this);
-
-            Tip tip1 = appTips.newTip(R.id.text, "Gendolf Gray");
-            tip1.setVerticalOffset(16);
-            tip1.setAlign(Tip.ALIGN_CENTER_BELOW);
-            appTips.addTip(tip1);
-
-            appTips.addTips(true);
-
-            Tip tip2 = appTips.newTip(R.id.text2, "Aragorn Great");
-            tip2.setHorizontalOffset(12);
-            tip2.setVerticalOffset(12);
-            tip2.setHighlightingEnabled(false);
-            appTips.addTip(tip2);
-
-            Tip tip3 = appTips.newTip(R.id.text1, "Legolas Elf");
-            tip3.setMaxWidth(200);
-            tip3.setMinWidth(100);
-            tip3.setHorizontalOffset(12);
-            tip3.setVerticalOffset(12);
-            tip3.setColor(Color.GREEN);
-            tip3.setTextColor(Color.DKGRAY);
-            appTips.addTip(tip3);
+            appTips.addTip(createFirstTip());
+            appTips.addTip(createSecondTip());
+            appTips.addTip(createThirdTip());
         }
-
         appTips.show();
     }
 
-    private void testViewGroup(){
-        FrameLayout container = new FrameLayout(this);
-        int windowType = WindowManager.LayoutParams.TYPE_APPLICATION;
-        WindowManager.LayoutParams containerLayoutParams = new WindowManager.LayoutParams(windowType);
-        containerLayoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
-        containerLayoutParams.height = WindowManager.LayoutParams.MATCH_PARENT;
-        containerLayoutParams.format = PixelFormat.TRANSLUCENT;
-        containerLayoutParams.windowAnimations = android.R.style.Animation_Dialog;
-        containerLayoutParams.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        containerLayoutParams.dimAmount = 0.3F;
+    private Tip createFirstTip(){
+        View targetView = findViewById(R.id.text);
+        Tip tip = appTips.newTip(targetView, "Gendolf Gray");
+        tip.setVerticalOffset(16);
+        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
+        return tip;
+    }
 
-        final int width = FrameLayout.LayoutParams.WRAP_CONTENT;
-        final int height = FrameLayout.LayoutParams.WRAP_CONTENT;
+    private Tip createSecondTip(){
+        Tip tip = appTips.newTip(R.id.text2, "Aragorn Great");
+        tip.setHorizontalOffset(12);
+        tip.setVerticalOffset(12);
+        tip.setHighlightingEnabled(false);
+        return tip;
+    }
 
-        TextView textView1 = new TextView(this);
-        textView1.setText("Text 1");
-        textView1.setBackgroundColor(Color.WHITE);
-        int view1Gravity = Gravity.START | Gravity.BOTTOM;
-        FrameLayout.LayoutParams view1LayoutParams = new FrameLayout.LayoutParams(width, height, view1Gravity);
+    private Tip createThirdTip(){
+        Tip tip = appTips.newTip(R.id.text1, "Legolas Elf");
+        tip.setMaxWidth(200);
+        tip.setMinWidth(100);
+        tip.setHorizontalOffset(12);
+        tip.setVerticalOffset(12);
+        tip.setColor(Color.GREEN);
+        tip.setTextColor(Color.DKGRAY);
+        return tip;
+    }
 
-        TextView textView2 = new TextView(this);
-        textView2.setText("Text 2");
-        textView2.setBackgroundColor(Color.RED);
-        int view2Gravity = Gravity.END | Gravity.BOTTOM;
-        FrameLayout.LayoutParams view2LayoutParams = new FrameLayout.LayoutParams(width, height, view2Gravity);
-
-        container.addView(textView1, view1LayoutParams);
-        container.addView(textView2, view2LayoutParams);
-        WindowManager windowManager = getWindowManager();
-        windowManager.addView(container, containerLayoutParams);
+    private void testAdvancedTips(){
+        if(appTips == null){
+            appTips = new AppTips(this);
+            Tip tip1 = createFirstTip();
+            Tip tip2 = createSecondTip();
+            Tip tip3 = createThirdTip();
+            appTips.addTips(true, tip1, tip2, tip3);
+        }
+        appTips.show();
     }
 }
