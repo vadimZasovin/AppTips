@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="tip_view_corner_radius">4dp</dimen>
+    <dimen name="tip_view_pointer_size">12dp</dimen>
+    <dimen name="tip_view_default_padding">4dp</dimen>
+    <dimen name="tip_view_default_min_height">36dp</dimen>
+    <dimen name="tip_view_default_min_width">144dp</dimen>
+    <dimen name="tip_view_default_max_width">248dp</dimen>
+</resources>

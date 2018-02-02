@@ -1,8 +1,13 @@
 package com.imogene.apptips;
 
 import android.app.Activity;
+import android.app.Fragment;
+import android.content.Context;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
+import android.support.annotation.IdRes;
+import android.support.annotation.NonNull;
+import android.support.annotation.StringRes;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -15,24 +20,74 @@ import java.util.List;
 /**
  * Created by Admin on 25.04.2016.
  */
-public class AppTips {
+public final class AppTips {
+
+    private static final float DIM_AMOUNT = 0.3F;
 
     private final Activity activity;
-    private final View view;
-    private final List<TipOptions> tips;
-    private final float dimAmount;
+    private final Fragment fragment;
+    private final android.support.v4.app.Fragment supportFragment;
+    private final List<Tip> tips = new ArrayList<>();
 
     private int currentIndex;
-    private TipView currentView;
+    private View currentView;
 
     private OnCloseListener onCloseListener;
     private OnTipChangeListener onTipChangeListener;
 
-    private AppTips(Builder builder){
-        activity = builder.activity;
-        view = builder.view;
-        tips = builder.tips;
-        dimAmount = builder.dimAmount;
+    public AppTips(@NonNull Activity activity){
+        Util.checkNonNullParameter(activity, "activity");
+        this.activity = activity;
+        fragment = null;
+        supportFragment = null;
+    }
+
+    public AppTips(@NonNull Fragment fragment){
+        Util.checkNonNullParameter(fragment, "fragment");
+        this.fragment = fragment;
+        activity = null;
+        supportFragment = null;
+    }
+
+    public AppTips(@NonNull android.support.v4.app.Fragment fragment){
+        Util.checkNonNullParameter(fragment, "fragment");
+        this.supportFragment = fragment;
+        activity = null;
+        this.fragment = null;
+    }
+
+    private Context getContext(){
+        return activity != null ? activity
+                : fragment != null ? fragment.getActivity()
+                : supportFragment.getActivity();
+    }
+
+    public Tip newTip(@IdRes int targetId, @StringRes int textRes){
+        return new Tip(getContext(), targetId, textRes);
+    }
+
+    public Tip newTip(@IdRes int targetId, CharSequence text){
+        return new Tip(getContext(), targetId, text);
+    }
+
+    public void addTip(Tip tip){
+        tips.add(tip);
+    }
+
+    public void addTips(boolean highlightingEnabled, Tip... tips){
+        Util.checkNonNullParameter(tips, "tips");
+        int length = tips.length;
+        if(length == 0){
+            throw new IllegalStateException("The array of tips must not be empty.");
+        }
+        Tip tip = tips[0];
+        tip.highlightingEnabled = highlightingEnabled;
+        addTip(tip);
+        for (int i = 1; i < length; i++){
+            Tip sibling = tips[i];
+            tip.sibling = sibling;
+            tip = sibling;
+        }
     }
 
     /**
@@ -126,39 +181,46 @@ public class AppTips {
 
     private void showTip(int tipIndex){
         WindowManager windowManager = getWindowManager();
-
         if(currentView != null){
             windowManager.removeView(currentView);
         }
-
         if(tipIndex == tips.size()){
             notifyClosed(false);
             reset();
             return;
         }
+        Tip tip = tips.get(tipIndex);
+        boolean multipleTips = tip.sibling != null;
+        currentView = multipleTips ? createTipsLayout(tip) : createTipView(tip);
 
-        TipOptions options = tips.get(tipIndex);
+        int viewId = tip.targetId;
+        View target = findTarget(viewId);
 
-        currentView = new TipView(activity);
-        currentView.setColor(options.color);
-        currentView.setTextColor(options.textColor);
-        currentView.setOnTouchListener(onTouchListener);
-        currentView.setText(options.text);
-        int align = options.align;
-        int mode = getTipViewMode(align);
-        currentView.setMode(mode);
-        currentView.setPaddingWithRespectToPointerSize(options.padding);
-        currentView.setMinWidth(options.minWidth);
-        currentView.setMaxWidth(options.maxWidth);
-        currentView.setMinHeight(options.minHeight);
-        currentView.setPointerPosition(options.pointerPosition);
-
-        int viewId = options.viewId;
-        View target = getTarget(viewId);
-
-        WindowManager.LayoutParams lp = getLayoutParams(target, currentView, options);
+        WindowManager.LayoutParams lp = getLayoutParams(target, currentView, tip);
         windowManager.addView(currentView, lp);
         notifyTipChanged(tipIndex, target);
+    }
+
+    private View createTipsLayout(Tip tip){
+        return null;
+    }
+
+    private TipView createTipView(Tip tip){
+        Context context = getContext();
+        TipView tipView = new TipView(context);
+        tipView.setColor(tip.color);
+        tipView.setTextColor(tip.textColor);
+        tipView.setOnTouchListener(onTouchListener);
+        tipView.setText(tip.text);
+        int align = tip.align;
+        int mode = getTipViewMode(align);
+        tipView.setMode(mode);
+        tipView.setPadding(tip.padding);
+        tipView.setMinWidth(tip.minWidth);
+        tipView.setMaxWidth(tip.maxWidth);
+        tipView.setMinHeight(tip.minHeight);
+        tipView.setPointerPosition(tip.pointerPosition);
+        return tipView;
     }
 
     private WindowManager getWindowManager(){
@@ -178,23 +240,34 @@ public class AppTips {
 
     private int getTipViewMode(int align){
         switch (align){
-            case TipOptions.ALIGN_CENTER_ABOVE:
-            case TipOptions.ALIGN_LEFT_ABOVE:
-            case TipOptions.ALIGN_RIGHT_ABOVE:
+            case Tip.ALIGN_CENTER_ABOVE:
+            case Tip.ALIGN_LEFT_ABOVE:
+            case Tip.ALIGN_RIGHT_ABOVE:
                 return TipView.MODE_ABOVE_TARGET;
-            case TipOptions.ALIGN_LEFT:
+            case Tip.ALIGN_LEFT:
                 return TipView.MODE_TO_LEFT_TARGET;
-            case TipOptions.ALIGN_RIGHT:
+            case Tip.ALIGN_RIGHT:
                 return TipView.MODE_TO_RIGHT_TARGET;
             default:
                 return TipView.MODE_BELOW_TARGET;
         }
     }
 
-    private View getTarget(int targetId){
-        View target = view != null ?
-                view.findViewById(targetId) :
-                activity.findViewById(targetId);
+    private View findTarget(int targetId){
+        View target = null;
+        if(activity != null){
+            target = activity.findViewById(targetId);
+        } else {
+            View rootView;
+            if(fragment != null){
+                rootView = fragment.getView();
+            } else {
+                rootView = supportFragment.getView();
+            }
+            if(rootView != null){
+                target = rootView.findViewById(targetId);
+            }
+        }
         if(target == null){
             throw new IllegalStateException(
                     "Target view is not found.");
@@ -202,8 +275,7 @@ public class AppTips {
         return target;
     }
 
-    private WindowManager.LayoutParams getLayoutParams(View target, View tipView,
-                                                       TipOptions options){
+    private WindowManager.LayoutParams getLayoutParams(View target, View tipView, Tip tip){
         int windowType = WindowManager.LayoutParams.TYPE_APPLICATION;
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(windowType);
         lp.width = WindowManager.LayoutParams.WRAP_CONTENT;
@@ -212,16 +284,16 @@ public class AppTips {
         lp.windowAnimations = android.R.style.Animation_Dialog;
         lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-        if(dimAmount > 0){
+        if(tip.highlightingEnabled){
             lp.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-            lp.dimAmount = dimAmount;
+            lp.dimAmount = DIM_AMOUNT;
         }
-        scheduleAdjusting(target, tipView, options, lp);
+        scheduleAdjusting(target, tipView, tip, lp);
         return lp;
     }
 
     private void scheduleAdjusting(final View target, final View tipView,
-                                   final TipOptions options,
+                                   final Tip options,
                                    final WindowManager.LayoutParams lp){
         ViewTreeObserver observer = tipView.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -236,50 +308,50 @@ public class AppTips {
                 final int targetWidth = target.getWidth();
                 final int tipHeight = tipView.getHeight();
                 final int tipWidth = tipView.getWidth();
-                final int marginX = options.horizontalMargin;
-                final int marginY = options.verticalMargin;
+                final int offsetX = options.horizontalOffset;
+                final int offsetY = options.verticalOffset;
                 final int delta;
 
                 lp.gravity = Gravity.TOP | Gravity.START;
                 final int x, y;
                 switch (options.align){
-                    case TipOptions.ALIGN_LEFT_BELOW:
-                        x = targetX + marginX;
-                        y = targetY + targetHeight + marginY;
+                    case Tip.ALIGN_LEFT_BELOW:
+                        x = targetX + offsetX;
+                        y = targetY + targetHeight + offsetY;
                         break;
-                    case TipOptions.ALIGN_RIGHT_BELOW:
+                    case Tip.ALIGN_RIGHT_BELOW:
                         delta = targetWidth - tipWidth;
-                        x = targetX + delta + marginX;
-                        y = targetY + targetHeight + marginY;
+                        x = targetX + delta + offsetX;
+                        y = targetY + targetHeight + offsetY;
                         break;
-                    case TipOptions.ALIGN_CENTER_BELOW:
+                    case Tip.ALIGN_CENTER_BELOW:
                         delta = (targetWidth - tipWidth) / 2;
-                        x = targetX + delta + marginX;
-                        y = targetY + targetHeight + marginY;
+                        x = targetX + delta + offsetX;
+                        y = targetY + targetHeight + offsetY;
                         break;
-                    case TipOptions.ALIGN_LEFT_ABOVE:
-                        x = targetX + marginX;
-                        y = targetY - tipHeight - marginY;
+                    case Tip.ALIGN_LEFT_ABOVE:
+                        x = targetX + offsetX;
+                        y = targetY - tipHeight - offsetY;
                         break;
-                    case TipOptions.ALIGN_RIGHT_ABOVE:
+                    case Tip.ALIGN_RIGHT_ABOVE:
                         delta = targetWidth - tipWidth;
-                        x = targetX + delta + marginX;
-                        y = targetY - tipHeight - marginY;
+                        x = targetX + delta + offsetX;
+                        y = targetY - tipHeight - offsetY;
                         break;
-                    case TipOptions.ALIGN_CENTER_ABOVE:
+                    case Tip.ALIGN_CENTER_ABOVE:
                         delta = (targetWidth - tipWidth) / 2;
-                        x = targetX + delta + marginX;
-                        y = targetY - tipHeight - marginY;
+                        x = targetX + delta + offsetX;
+                        y = targetY - tipHeight - offsetY;
                         break;
-                    case TipOptions.ALIGN_LEFT:
-                        x = targetX - tipWidth - marginX;
+                    case Tip.ALIGN_LEFT:
+                        x = targetX - tipWidth - offsetX;
                         delta = (targetHeight - tipHeight) / 2;
-                        y = targetY + delta + marginY;
+                        y = targetY + delta + offsetY;
                         break;
                     default:
-                        x = targetX + targetWidth + marginX;
+                        x = targetX + targetWidth + offsetX;
                         delta = (targetHeight - tipHeight) / 2;
-                        y = targetY + delta + marginY;
+                        y = targetY + delta + offsetY;
                         break;
                 }
 
@@ -314,70 +386,6 @@ public class AppTips {
 
     public void setOnTipChangeListener(OnTipChangeListener listener) {
         onTipChangeListener = listener;
-    }
-
-    public static class Builder{
-
-        final Activity activity;
-        final View view;
-        final List<TipOptions> tips;
-        float dimAmount = -1f;
-        private TipOptions defaultOptions;
-
-        private Builder(Activity activity, View view){
-            tips = new ArrayList<>();
-            this.activity = activity;
-            this.view = view;
-        }
-
-        public Builder(Activity activity){
-            this(activity, null);
-        }
-
-        public Builder(View view){
-            this((Activity) view.getContext(), view);
-        }
-
-        public Builder dimAmount(float dimAmount) {
-            this.dimAmount = dimAmount;
-            return this;
-        }
-
-        public Builder tip(TipOptions options) {
-            tips.add(options);
-            return this;
-        }
-
-        public Builder tip(int viewId, CharSequence text) {
-            if(defaultOptions == null){
-                throw new IllegalStateException(
-                        "Default options must be set.");
-            }
-            TipOptions options = TipOptions.from(defaultOptions);
-            options.viewId = viewId;
-            options.text = text;
-            tips.add(options);
-            return this;
-        }
-
-        public Builder defaultOptions(TipOptions options) {
-            defaultOptions = options;
-            return this;
-        }
-
-        public AppTips build() {
-            if(tips.isEmpty()){
-                throw new IllegalStateException(
-                        "At least one tip must be specified.");
-            }
-            return new AppTips(this);
-        }
-
-        public AppTips show() {
-            AppTips appTips = build();
-            appTips.show();
-            return appTips;
-        }
     }
 
     public interface OnCloseListener{

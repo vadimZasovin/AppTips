@@ -1,12 +1,14 @@
 package com.imogene.apptips;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
+import android.graphics.drawable.shapes.Shape;
 import android.support.v7.widget.AppCompatTextView;
 import android.view.Gravity;
 
@@ -19,9 +21,6 @@ class TipView extends AppCompatTextView {
     static final int MODE_ABOVE_TARGET = 1;
     static final int MODE_TO_LEFT_TARGET = 2;
     static final int MODE_TO_RIGHT_TARGET = 3;
-
-    private static final int POINTER_SIZE_DP = 12;
-    private static final int PADDING_DP = 4;
 
     private final int pointerSize;
     private float pointerPosition = 0.5f;
@@ -36,29 +35,33 @@ class TipView extends AppCompatTextView {
 
     TipView(Context context) {
         super(context);
-        pointerSize = Util.convertDpInPixels(context, POINTER_SIZE_DP);
+        Resources resources = getResources();
+
+        pointerSize = resources.getDimensionPixelSize(R.dimen.tip_view_pointer_size);
+
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.FILL);
+
         path = new Path();
         path.setFillType(Path.FillType.EVEN_ODD);
-        float cornerRadius = Util.convertDpInPixels(context, PADDING_DP);
-        drawable = new ShapeDrawable(new RoundRectShape(
-                new float[]{
-                        cornerRadius, cornerRadius, cornerRadius, cornerRadius,
-                        cornerRadius, cornerRadius, cornerRadius, cornerRadius},
-                null, null));
-        drawable.getPaint().set(paint);
-
         A = new PointF();
         B = new PointF();
         C = new PointF();
+
+        float radius = resources.getDimensionPixelSize(R.dimen.tip_view_corner_radius);
+        float[] radii = new float[]{
+                radius, radius, radius, radius,
+                radius, radius, radius, radius
+        };
+        Shape shape = new RoundRectShape(radii, null, null);
+        drawable = new ShapeDrawable(shape);
 
         setGravity(Gravity.CENTER);
     }
 
     void setColor(int color) {
         paint.setColor(color);
-        drawable.getPaint().set(paint);
+        drawable.getPaint().setColor(color);
         invalidate();
     }
 
@@ -76,25 +79,28 @@ class TipView extends AppCompatTextView {
         invalidate();
     }
 
+    @SuppressWarnings("SameParameterValue")
     private float clamp(float value, float min, float max){
         return Math.max(min, Math.min(max, value));
     }
 
-    void setPaddingWithRespectToPointerSize(int padding){
+    void setPadding(int padding){
+        int left = padding, top = padding, right = padding, bottom = padding;
         switch (mode){
             case MODE_BELOW_TARGET:
-                setPadding(padding, padding + pointerSize, padding, padding);
+                top += pointerSize;
                 break;
             case MODE_ABOVE_TARGET:
-                super.setPadding(padding, padding, padding, padding + pointerSize);
+                bottom += pointerSize;
                 break;
             case MODE_TO_LEFT_TARGET:
-                super.setPadding(padding, padding, padding + pointerSize, padding);
+                right += pointerSize;
                 break;
             case MODE_TO_RIGHT_TARGET:
-                super.setPadding(padding + pointerSize, padding, padding, padding);
+                left += pointerSize;
                 break;
         }
+        setPadding(left, top, right, bottom);
     }
 
     @Override
@@ -114,30 +120,10 @@ class TipView extends AppCompatTextView {
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        path.moveTo(B.x, B.y);
-        path.lineTo(A.x, A.y);
-        path.lineTo(C.x, C.y);
-        path.close();
-        canvas.drawPath(path, paint);
-        drawable.draw(canvas);
-        super.onDraw(canvas);
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
-
-        if(mode == MODE_ABOVE_TARGET || mode == MODE_BELOW_TARGET){
-            height += pointerSize;
-        }else if(mode == MODE_TO_LEFT_TARGET || mode == MODE_TO_RIGHT_TARGET){
-            width += pointerSize;
-        }
-
-        int widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED);
-        int heightSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED);
-        super.onMeasure(widthSpec, heightSpec);
+    public boolean performClick() {
+        // override this method in order to
+        // disable IDE warnings about it.
+        return super.performClick();
     }
 
     @Override
@@ -146,7 +132,8 @@ class TipView extends AppCompatTextView {
 
         float wh = w * pointerPosition;
         float hh = h * pointerPosition;
-        float bh = pointerSize / (2 * Util.sinDegrees(60));
+        float sin60 = Util.sinDegrees(60);
+        float bh = pointerSize / (2 * sin60);
 
         float bxv = wh - bh;
         float cxv = wh + bh;
@@ -178,9 +165,29 @@ class TipView extends AppCompatTextView {
     }
 
     @Override
-    public boolean performClick() {
-        // override this method in order to
-        // disable IDE warnings about it.
-        return super.performClick();
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int height = MeasureSpec.getSize(heightMeasureSpec);
+
+        if(mode == MODE_ABOVE_TARGET || mode == MODE_BELOW_TARGET){
+            height += pointerSize;
+        } else {
+            width += pointerSize;
+        }
+
+        int widthSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.UNSPECIFIED);
+        int heightSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.UNSPECIFIED);
+        super.onMeasure(widthSpec, heightSpec);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        path.moveTo(B.x, B.y);
+        path.lineTo(A.x, A.y);
+        path.lineTo(C.x, C.y);
+        path.close();
+        canvas.drawPath(path, paint);
+        drawable.draw(canvas);
+        super.onDraw(canvas);
     }
 }
