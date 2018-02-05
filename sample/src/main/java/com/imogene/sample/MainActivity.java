@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
                 testAdvancedTips();
             }
         });
+        testAdvancedTips();
     }
 
     private void testSimpleTips(){
@@ -69,6 +70,14 @@ public class MainActivity extends Activity {
         return tip;
     }
 
+    private Tip createFourthTip(){
+        Tip tip = appTips.newTip(400, 500, "Bilbo Beggins");
+        tip.setColor(getResources().getColor(R.color.colorWhiteTranslucent));
+        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
+        tip.setHighlightingEnabled(true);
+        return tip;
+    }
+
     private void testAdvancedTips(){
         if(appTips == null){
             appTips = new AppTips(this);
@@ -76,6 +85,10 @@ public class MainActivity extends Activity {
             Tip tip2 = createSecondTip();
             Tip tip3 = createThirdTip();
             appTips.addTips(true, tip1, tip2, tip3);
+            appTips.addTip(createFirstTip());
+            appTips.addTip(createSecondTip());
+            appTips.addTip(createThirdTip());
+            appTips.addTip(createFourthTip());
         }
         appTips.show();
     }

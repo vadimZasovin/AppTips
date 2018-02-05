@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.os.Build;
 import android.support.annotation.IdRes;
 import android.support.annotation.StringRes;
@@ -26,6 +27,7 @@ public final class Tip {
 
     final int targetId;
     final View targetView;
+    final Point target;
     final CharSequence text;
 
     int color;
@@ -41,10 +43,13 @@ public final class Tip {
     boolean highlightingEnabled;
 
     Tip sibling;
+    View tipView;
+    View highlightingView;
 
     Tip(Context context, @IdRes int targetId, CharSequence text){
         this.targetId = targetId;
         this.targetView = null;
+        this.target = null;
         this.text = text;
         initializeDefaults(context);
     }
@@ -52,6 +57,15 @@ public final class Tip {
     Tip(Context context, View targetView, CharSequence text){
         this.targetId = View.NO_ID;
         this.targetView = targetView;
+        this.target = null;
+        this.text = text;
+        initializeDefaults(context);
+    }
+
+    Tip(Context context, Point target, CharSequence text){
+        this.targetId = View.NO_ID;
+        this.targetView = null;
+        this.target = target;
         this.text = text;
         initializeDefaults(context);
     }

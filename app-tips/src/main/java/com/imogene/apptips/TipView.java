@@ -141,26 +141,31 @@ class TipView extends AppCompatTextView {
         float byh = hh - bh;
         float cyh = hh + bh;
 
-        if(mode == MODE_BELOW_TARGET){
-            A.set(wh, 0);
-            B.set(bxv, pointerSize);
-            C.set(cxv, pointerSize);
-            drawable.setBounds(0, pointerSize, w, h);
-        }else if (mode == MODE_ABOVE_TARGET){
-            A.set(wh, h);
-            B.set(bxv, h - pointerSize);
-            C.set(cxv, h - pointerSize);
-            drawable.setBounds(0, 0, w, h - pointerSize);
-        }else if(mode == MODE_TO_LEFT_TARGET){
-            A.set(w, hh);
-            B.set(w - pointerSize, byh);
-            C.set(w - pointerSize, cyh);
-            drawable.setBounds(0, 0, w - pointerSize, h);
-        }else if(mode == MODE_TO_RIGHT_TARGET){
-            A.set(0, hh);
-            B.set(pointerSize, byh);
-            C.set(pointerSize, cyh);
-            drawable.setBounds(pointerSize, 0, w, h);
+        switch (mode){
+            case MODE_BELOW_TARGET:
+                A.set(wh, 0);
+                B.set(bxv, pointerSize);
+                C.set(cxv, pointerSize);
+                drawable.setBounds(0, pointerSize, w, h);
+                break;
+            case MODE_ABOVE_TARGET:
+                A.set(wh, h);
+                B.set(bxv, h - pointerSize);
+                C.set(cxv, h - pointerSize);
+                drawable.setBounds(0, 0, w, h - pointerSize);
+                break;
+            case MODE_TO_LEFT_TARGET:
+                A.set(w, hh);
+                B.set(w - pointerSize, byh);
+                C.set(w - pointerSize, cyh);
+                drawable.setBounds(0, 0, w - pointerSize, h);
+                break;
+            case MODE_TO_RIGHT_TARGET:
+                A.set(0, hh);
+                B.set(pointerSize, byh);
+                C.set(pointerSize, cyh);
+                drawable.setBounds(pointerSize, 0, w, h);
+                break;
         }
     }
 
@@ -182,6 +187,7 @@ class TipView extends AppCompatTextView {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        path.rewind();
         path.moveTo(B.x, B.y);
         path.lineTo(A.x, A.y);
         path.lineTo(C.x, C.y);
