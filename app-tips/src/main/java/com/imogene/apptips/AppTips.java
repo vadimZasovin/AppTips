@@ -13,11 +13,13 @@ import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.view.ViewCompat;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,6 +51,13 @@ public final class AppTips {
 
     private OnCloseListener onCloseListener;
 
+    /**
+     * Creates new {@code AppTips} object for the given activity.
+     * The target views for tips will be searched in the specified
+     * activity.
+     * @param activity the activity in which the target views will
+     *                 be searched.
+     */
     public AppTips(@NonNull Activity activity){
         Util.checkNonNullParameter(activity, "activity");
         context = activity;
@@ -58,11 +67,21 @@ public final class AppTips {
         this.supportFragment = null;
     }
 
+    /**
+     * Creates new {@code AppTips} object for the given fragment.
+     * The target views for tips will be searched in the root
+     * view of the specified fragment (that is returned by the
+     * {@link Fragment#onCreateView(LayoutInflater, ViewGroup, Bundle)}
+     * callback method). The fragment must be attached to activity
+     * at this point.
+     * @param fragment the fragment in which the target views will
+     *                 be searched.
+     */
     public AppTips(@NonNull Fragment fragment){
         Util.checkNonNullParameter(fragment, "fragment");
         Activity activity = fragment.getActivity();
         if(activity == null){
-            throw new IllegalArgumentException(
+            throw new IllegalStateException(
                     "Fragment must be attached to activity.");
         }
         context = activity;
@@ -72,11 +91,21 @@ public final class AppTips {
         supportFragment = null;
     }
 
+    /**
+     * Creates new {@code AppTips} object for the given fragment.
+     * The target views for tips will be searched in the root
+     * view of the specified fragment (that is returned by the
+     * {@link android.support.v4.app.Fragment#onCreateView(LayoutInflater, ViewGroup, Bundle)}
+     * callback method). The fragment must be attached to activity
+     * at this point.
+     * @param fragment the fragment in which the target views will
+     *                 be searched.
+     */
     public AppTips(@NonNull android.support.v4.app.Fragment fragment){
         Util.checkNonNullParameter(fragment, "fragment");
         Activity activity = fragment.getActivity();
         if(activity == null){
-            throw new IllegalArgumentException(
+            throw new IllegalStateException(
                     "Fragment must be attached to activity.");
         }
         context = activity;
@@ -117,22 +146,22 @@ public final class AppTips {
     }
 
     public void addTip(Tip tip){
+        Util.checkNonNullParameter(tip, "tip");
         tips.add(tip);
     }
 
     public void addTips(boolean highlightingEnabled, Tip... tips){
         Util.checkNonNullParameter(tips, "tips");
         int length = tips.length;
-        if(length == 0){
-            throw new IllegalStateException("The array of tips must not be empty.");
-        }
-        Tip tip = tips[0];
-        tip.highlightingEnabled = highlightingEnabled;
-        addTip(tip);
-        for (int i = 1; i < length; i++){
-            Tip sibling = tips[i];
-            tip.sibling = sibling;
-            tip = sibling;
+        if(length > 0){
+            Tip tip = tips[0];
+            tip.highlightingEnabled = highlightingEnabled;
+            addTip(tip);
+            for (int i = 1; i < length; i++){
+                Tip sibling = tips[i];
+                tip.sibling = sibling;
+                tip = sibling;
+            }
         }
     }
 
@@ -176,7 +205,6 @@ public final class AppTips {
      * Next portion of tips is always shown automatically when the user
      * touches the screen outside of tip views or if all tip views are
      * removed one by one (by clicking a tip view itself).
-     *
      * @see #show()
      */
     public void showNext(){
@@ -212,9 +240,9 @@ public final class AppTips {
     }
 
     /**
-     * Registers a callback to be invoked when a tips are closed either
-     * as a result of calling the {@link #close()} method or when all
-     * tips are shown by the user.
+     * Registers a callback to be invoked when the tips are closed either
+     * as a result of calling the {@link #close()} or {@link #reset()}
+     * methods or after all the tips are shown by the user.
      * @param listener the close listener.
      */
     public void setOnCloseListener(OnCloseListener listener) {
@@ -812,18 +840,18 @@ public final class AppTips {
     }
 
     /**
-     * Interface definition for the callback to be invoked when
-     * tips are closed either by calling the {@link #close()}
-     * method or when all tips are shown by the user.
+     * Interface definition for the callback to be invoked when the
+     * tips are closed either by calling the {@link #close()} or
+     * {@link #reset()} methods or when all tips are shown by the user.
      */
     public interface OnCloseListener {
 
         /**
-         * Called when a tips are closed.
+         * Called when the tips are closed.
          * @param cancelled indicates whether tips are closed as a result
-         *                  of calling the {@link #close()} method (then this
-         *                  value is true) or when all tips are shown by the
-         *                  user (then false.)
+         *                  of calling the {@link #close()} or {@link #reset()}
+         *                  methods (then this value is true) or when all the
+         *                  tips are shown by the user (then false.)
          */
         void onClose(boolean cancelled);
     }
