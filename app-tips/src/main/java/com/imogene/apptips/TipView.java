@@ -22,8 +22,13 @@ class TipView extends AppCompatTextView {
     static final int MODE_TO_LEFT_TARGET = 2;
     static final int MODE_TO_RIGHT_TARGET = 3;
 
+    private static final float MIN_POINTER_POSITION = 0.1F;
+    private static final float MAX_POINTER_POSITION = 0.9F;
+
     private final int pointerSize;
-    private float pointerPosition = 0.5f;
+    private float pointerPosition = 0.5F;
+    private int pointerOffset = 0;
+    private float pointerProtrusion = 1F;
     private int mode;
     private final Paint paint;
     private final Path path;
@@ -70,18 +75,107 @@ class TipView extends AppCompatTextView {
             throw new IllegalArgumentException("Unsupported mode: " + mode);
         }
         this.mode = mode;
-        invalidate();
         requestLayout();
     }
 
     void setPointerPosition(float position){
-        pointerPosition = clamp(position, .1f, .9f);
+        pointerPosition = clampPointerPosition(position);
+        pointerOffset = 0;
+        updatePointerPathPoints();
         invalidate();
     }
 
-    @SuppressWarnings("SameParameterValue")
+    void setPointerOffset(int offset){
+        pointerOffset = offset;
+        updatePointerPathPoints();
+        invalidate();
+    }
+
+    private float clampPointerPosition(float position){
+        return clamp(position, MIN_POINTER_POSITION, MAX_POINTER_POSITION);
+    }
+
     private float clamp(float value, float min, float max){
         return Math.max(min, Math.min(max, value));
+    }
+
+    private void updatePointerPathPoints(){
+        int width = getWidth();
+        int height = getHeight();
+        updatePointerPathPoints(width, height);
+    }
+
+    private void updatePointerPathPoints(int viewWidth, int viewHeight){
+        final float dynamicSize = pointerSize * pointerProtrusion;
+        final float protrusion = pointerSize - dynamicSize;
+        final float wh, hh, bh;
+
+        if(pointerOffset != 0){
+            wh = viewWidth / 2 + pointerOffset;
+            hh = viewHeight / 2 + pointerOffset;
+        } else {
+            wh = viewWidth * pointerPosition;
+            hh = viewHeight * pointerPosition;
+        }
+        final float sin60 = Util.sinDegrees(60);
+        bh = dynamicSize / (2 * sin60);
+
+        final float bx = wh - bh;
+        final float cx = wh + bh;
+        final float by = hh - bh;
+        final float cy = hh + bh;
+
+        switch (mode){
+            case MODE_BELOW_TARGET:
+                A.set(wh, protrusion);
+                B.set(bx, pointerSize);
+                C.set(cx, pointerSize);
+                break;
+            case MODE_ABOVE_TARGET:
+                A.set(wh, viewHeight - protrusion);
+                B.set(bx, viewHeight - pointerSize);
+                C.set(cx, viewHeight - pointerSize);
+                break;
+            case MODE_TO_LEFT_TARGET:
+                A.set(viewWidth - protrusion, hh);
+                B.set(viewWidth - pointerSize, by);
+                C.set(viewWidth - pointerSize, cy);
+                break;
+            case MODE_TO_RIGHT_TARGET:
+                A.set(protrusion, hh);
+                B.set(pointerSize, by);
+                C.set(pointerSize, cy);
+                break;
+        }
+    }
+
+    float getPointerPosition(){
+        if(pointerOffset != 0){
+            final float position;
+            if(isHorizontalMode()){
+                final float width = getWidth();
+                position = (width / 2 + pointerOffset) / width;
+            } else {
+                final float height = getHeight();
+                position = (height / 2 + pointerOffset) / height;
+            }
+            return clampPointerPosition(position);
+        }
+        return pointerPosition;
+    }
+
+    void setPointerProtrusion(float protrusion){
+        pointerProtrusion = protrusion;
+        updatePointerPathPoints();
+        invalidate();
+    }
+
+    private boolean isHorizontalMode(){
+        return mode == MODE_ABOVE_TARGET || mode == MODE_BELOW_TARGET;
+    }
+
+    private boolean isVerticalMode(){
+        return !isHorizontalMode();
     }
 
     void setPadding(int padding){
@@ -105,7 +199,7 @@ class TipView extends AppCompatTextView {
 
     @Override
     public void setMinHeight(int minHeight) {
-        if(mode == MODE_ABOVE_TARGET || mode == MODE_BELOW_TARGET){
+        if(isHorizontalMode()){
             minHeight += pointerSize;
         }
         super.setMinHeight(minHeight);
@@ -113,7 +207,7 @@ class TipView extends AppCompatTextView {
 
     @Override
     public void setMinWidth(int minWidth) {
-        if(mode == MODE_TO_LEFT_TARGET || mode == MODE_TO_RIGHT_TARGET){
+        if(isVerticalMode()){
             minWidth += pointerSize;
         }
         super.setMinWidth(minWidth);
@@ -129,44 +223,31 @@ class TipView extends AppCompatTextView {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        updatePointerPathPoints(w, h);
+        updateShapeBounds(w, h);
+    }
 
-        float wh = w * pointerPosition;
-        float hh = h * pointerPosition;
-        float sin60 = Util.sinDegrees(60);
-        float bh = pointerSize / (2 * sin60);
-
-        float bxv = wh - bh;
-        float cxv = wh + bh;
-
-        float byh = hh - bh;
-        float cyh = hh + bh;
-
+    private void updateShapeBounds(int viewWidth, int viewHeight){
+        final int left, top, right, bottom;
         switch (mode){
             case MODE_BELOW_TARGET:
-                A.set(wh, 0);
-                B.set(bxv, pointerSize);
-                C.set(cxv, pointerSize);
-                drawable.setBounds(0, pointerSize, w, h);
+                left = 0; top = pointerSize;
+                right = viewWidth; bottom = viewHeight;
                 break;
             case MODE_ABOVE_TARGET:
-                A.set(wh, h);
-                B.set(bxv, h - pointerSize);
-                C.set(cxv, h - pointerSize);
-                drawable.setBounds(0, 0, w, h - pointerSize);
+                left = 0; top = 0;
+                right = viewWidth; bottom = viewHeight - pointerSize;
                 break;
             case MODE_TO_LEFT_TARGET:
-                A.set(w, hh);
-                B.set(w - pointerSize, byh);
-                C.set(w - pointerSize, cyh);
-                drawable.setBounds(0, 0, w - pointerSize, h);
+                left = 0; top = 0;
+                right = viewWidth - pointerSize; bottom = viewHeight;
                 break;
-            case MODE_TO_RIGHT_TARGET:
-                A.set(0, hh);
-                B.set(pointerSize, byh);
-                C.set(pointerSize, cyh);
-                drawable.setBounds(pointerSize, 0, w, h);
+            default:
+                left = pointerSize; top = 0;
+                right = viewWidth; bottom = viewHeight;
                 break;
         }
+        drawable.setBounds(left, top, right, bottom);
     }
 
     @Override
@@ -174,7 +255,7 @@ class TipView extends AppCompatTextView {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
 
-        if(mode == MODE_ABOVE_TARGET || mode == MODE_BELOW_TARGET){
+        if(isHorizontalMode()){
             height += pointerSize;
         } else {
             width += pointerSize;

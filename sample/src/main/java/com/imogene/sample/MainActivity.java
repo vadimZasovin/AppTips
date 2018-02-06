@@ -2,13 +2,8 @@ package com.imogene.sample;
 
 import android.app.Activity;
 import android.graphics.Color;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import com.imogene.apptips.AppTips;
 import com.imogene.apptips.Tip;
@@ -56,6 +51,8 @@ public class MainActivity extends Activity {
         tip.setHorizontalOffset(12);
         tip.setVerticalOffset(12);
         tip.setHighlightingEnabled(false);
+        tip.setPointerAnimationEnabled(false);
+        tip.setPointerOffset(48);
         return tip;
     }
 
@@ -73,8 +70,9 @@ public class MainActivity extends Activity {
     private Tip createFourthTip(){
         Tip tip = appTips.newTip(400, 500, "Bilbo Beggins");
         tip.setColor(getResources().getColor(R.color.colorWhiteTranslucent));
-        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
+        tip.setAlign(Tip.ALIGN_CENTER_ABOVE);
         tip.setHighlightingEnabled(true);
+        tip.setPointerPosition(0.7F);
         return tip;
     }
 

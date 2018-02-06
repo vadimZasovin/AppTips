@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
 import android.support.annotation.IdRes;
-import android.support.annotation.StringRes;
 import android.view.View;
 
 /**
@@ -38,13 +37,16 @@ public final class Tip {
     int minWidth;
     int maxWidth;
     float pointerPosition;
+    int pointerOffset;
+    boolean pointerAnimationEnabled;
     int verticalOffset;
     int horizontalOffset;
     boolean highlightingEnabled;
 
     Tip sibling;
-    View tipView;
+    TipView tipView;
     View highlightingView;
+    View targetViewCache;
 
     Tip(Context context, @IdRes int targetId, CharSequence text){
         this.targetId = targetId;
@@ -80,6 +82,8 @@ public final class Tip {
         maxWidth = resources.getDimensionPixelSize(R.dimen.tip_view_default_max_width);
         align = ALIGN_LEFT_BELOW;
         pointerPosition = 0.5f;
+        pointerOffset = 0;
+        pointerAnimationEnabled = true;
         verticalOffset = 0;
         horizontalOffset = 0;
         highlightingEnabled = true;
@@ -167,6 +171,22 @@ public final class Tip {
 
     public float getPointerPosition() {
         return pointerPosition;
+    }
+
+    public void setPointerOffset(int pointerOffset) {
+        this.pointerOffset = pointerOffset;
+    }
+
+    public int getPointerOffset() {
+        return pointerOffset;
+    }
+
+    public void setPointerAnimationEnabled(boolean pointerAnimationEnabled) {
+        this.pointerAnimationEnabled = pointerAnimationEnabled;
+    }
+
+    public boolean isPointerAnimationEnabled() {
+        return pointerAnimationEnabled;
     }
 
     public void setVerticalOffset(int verticalOffset){

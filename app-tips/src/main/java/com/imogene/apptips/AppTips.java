@@ -1,12 +1,13 @@
 package com.imogene.apptips;
 
+import android.animation.Animator;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.RectF;
@@ -16,7 +17,6 @@ import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.view.ViewCompat;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -248,6 +248,11 @@ public final class AppTips {
                     tip.tipView = null;
                     if(!wrapped){
                         windowManager.removeView(tipView);
+                    } else if(tip.highlightingView != null){
+                        tip.highlightingView = null;
+                        // destroy drawing cache of the target view
+                        View targetView = getTargetView(tip);
+                        targetView.destroyDrawingCache();
                     }
                 }
                 tip = tip.sibling;
@@ -290,35 +295,63 @@ public final class AppTips {
                 tip = tip.sibling;
                 continue;
             }
-            View highlightingView = createHighlightingView(tip);
+            View highlightingView = new View(context);
+            View targetView = getTargetView(tip);
+            setupHighlighting(targetView, highlightingView);
             tip.highlightingView = highlightingView;
-            AbsoluteLayout.LayoutParams hlp = getLayoutParamsForWrapper();
-            wrapper.addView(highlightingView, hlp);
+            highlightingView.setTag(R.id.tag_id_tip, tip);
+            highlightingView.setOnClickListener(highlightingViewClickListener);
+            AbsoluteLayout.LayoutParams lp = getLayoutParamsForWrapper();
+            wrapper.addView(highlightingView, lp);
             tip = tip.sibling;
         } while (tip != null);
         tip = firstSibling;
-        // add tip views and schedule position adjusting
+        // add tip views to the wrapper
         do {
             View tipView = createTipView(tip);
             AbsoluteLayout.LayoutParams lp = getLayoutParamsForWrapper();
             wrapper.addView(tipView, lp);
-            adjustPosition(tipView, tip);
             tip = tip.sibling;
         } while (tip != null);
         // and finally add the wrapper to the WindowManager
         WindowManager.LayoutParams lp = getWrapperLayoutParams();
         windowManager.addView(wrapper, lp);
+        adjustPositions();
     }
 
-    private View createHighlightingView(Tip tip){
-        View view = new View(context);
-        View targetView = findTargetViewForTip(tip);
+    /**
+     * Setup highlighting for the view by using target view's drawing
+     * cache bitmap as the background. If the drawing cache is not
+     * prepared yet this method registers an onPreDrawListener to
+     * wait for the target view to be drawn to obtain it's drawing
+     * cache.
+     */
+    private void setupHighlighting(final View targetView, final View viewToHighlight){
+        if(!highlightView(targetView, viewToHighlight)){
+            ViewTreeObserver observer = targetView.getViewTreeObserver();
+            observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                @Override
+                public boolean onPreDraw() {
+                    if(highlightView(targetView, viewToHighlight)){
+                        ViewTreeObserver observer = targetView.getViewTreeObserver();
+                        observer.removeOnPreDrawListener(this);
+                    }
+                    return true;
+                }
+            });
+        }
+    }
+
+    private boolean highlightView(View targetView, View viewToHighlight){
         targetView.buildDrawingCache();
         Bitmap drawingCache = targetView.getDrawingCache();
-        Resources resources = context.getResources();
-        Drawable background = new BitmapDrawable(resources, drawingCache);
-        view.setBackground(background);
-        return view;
+        if(drawingCache != null){
+            Resources resources = context.getResources();
+            Drawable background = new BitmapDrawable(resources, drawingCache);
+            viewToHighlight.setBackground(background);
+            return true;
+        }
+        return false;
     }
 
     private AbsoluteLayout.LayoutParams getLayoutParamsForWrapper(){
@@ -333,7 +366,6 @@ public final class AppTips {
         lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.format = PixelFormat.TRANSLUCENT;
-        //lp.windowAnimations = android.R.style.Animation_Dialog;
         lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
                 WindowManager.LayoutParams.FLAG_DIM_BEHIND;
@@ -353,6 +385,7 @@ public final class AppTips {
             tip = tip.sibling;
             first = false;
         } while (tip != null);
+        adjustPositions();
     }
 
     /**
@@ -362,7 +395,6 @@ public final class AppTips {
         View tipView = createTipView(tip);
         WindowManager.LayoutParams lp = getTipViewLayoutParams(watchOutsideTouch);
         windowManager.addView(tipView, lp);
-        adjustPosition(tipView, tip);
     }
 
     /**
@@ -384,6 +416,8 @@ public final class AppTips {
         tipView.setMaxWidth(tip.maxWidth);
         tipView.setMinHeight(tip.minHeight);
         tipView.setPointerPosition(tip.pointerPosition);
+        tipView.setPointerOffset(tip.pointerOffset);
+        tipView.setPointerProtrusion(1);
         return tipView;
     }
 
@@ -464,13 +498,20 @@ public final class AppTips {
         tip.tipView = null;
         boolean showNextPortion = false;
         if(wrapper != null){
+            wrapper.removeView(tipView);
+            View highlightingView = tip.highlightingView;
+            if(highlightingView != null){
+                wrapper.removeView(highlightingView);
+                tip.highlightingView = null;
+                // destroy drawing cache of the target view
+                View targetView = getTargetView(tip);
+                targetView.destroyDrawingCache();
+            }
             int childCount = wrapper.getChildCount();
-            if(childCount == 1){
+            if(childCount == 0){
                 windowManager.removeView(wrapper);
                 wrapper = null;
                 showNextPortion = true;
-            } else {
-                wrapper.removeView(tipView);
             }
         } else {
             windowManager.removeView(tipView);
@@ -534,6 +575,16 @@ public final class AppTips {
         }
     };
 
+    private final View.OnClickListener highlightingViewClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            Tip tip = (Tip) view.getTag(R.id.tag_id_tip);
+            if(removeTipView(tip.tipView)){
+                showNextPortion();
+            }
+        }
+    };
+
     private void notifyClosed(boolean cancelled){
         if(onCloseListener != null){
             onCloseListener.onClose(cancelled);
@@ -541,61 +592,108 @@ public final class AppTips {
     }
 
     /**
-     * Listens for the first global layout event and adjusts the position
-     * of the given tip view according to dimensions and position of the
-     * target and tip options.
+     * Adjusts positions of the tip views and highlighting views
+     * (if they presented) when first layout event occurred.
      */
-    private void adjustPosition(final View tipView, final Tip tip){
-        // in order to adjust tip view's position we need to know the position
-        // and dimensions of both: tip view and target view. If there is no
-        // target view or if the tips are shown when the target view is already
-        // laid out we observe tip view, otherwise we observe target view.
+    private void adjustPositions(){
+        Tip tip = tips.get(currentIndex);
+        // find view to observe for the first global layout event
         final View viewToObserve;
-        final View targetView;
-        if(tip.target != null){
-            viewToObserve = tipView;
-            targetView = null;
-        } else {
-            targetView = findTargetViewForTip(tip);
-            viewToObserve = ViewCompat.isLaidOut(targetView) ? tipView : targetView;
-        }
+        View firstTargetView = null;
+        View lastTipView = tip.tipView;
+        // if we find a target view that is not laid out yet
+        // it will be the view to observe for the first global
+        // layout event
+        do {
+            if(tip.target != null){
+                tip = tip.sibling;
+                continue;
+            }
+            View targetView = getTargetView(tip);
+            if(!ViewCompat.isLaidOut(targetView)){
+                firstTargetView = targetView;
+                break;
+            }
+            lastTipView = tip.tipView;
+            tip = tip.sibling;
+        } while (tip != null);
+        viewToObserve = firstTargetView != null ? firstTargetView :
+                wrapper != null ? wrapper : lastTipView;
+
         ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
                 observer.removeOnGlobalLayoutListener(this);
-                if(targetView != null){
-                    getTipViewPosition(targetView, tipView, tip);
-                    // adjust highlighting view position and size
-                    View highlightingView = tip.highlightingView;
-                    if(highlightingView != null){
-                        AbsoluteLayout.LayoutParams lp = (AbsoluteLayout.LayoutParams)
-                                highlightingView.getLayoutParams();
-                        lp.x = (int) targetView.getX();
-                        lp.y = (int) targetView.getY();
-                        lp.width = targetView.getWidth();
-                        lp.height = targetView.getHeight();
-                        highlightingView.setLayoutParams(lp);
-                    }
-                } else {
+
+                Tip tip = tips.get(currentIndex);
+                do {
+                    TipView tipView = tip.tipView;
                     Point target = tip.target;
                     if(target != null){
-                        getTipViewPosition(target.x, target.y, tipView, tip);
+                        int x = target.x, y = target.y;
+                        getTipViewPosition(x, y, tipView, tip);
+                    } else {
+                        View targetView = getTargetView(tip);
+                        getTipViewPosition(targetView, tipView, tip);
+
+                        // adjust highlighting view size and position
+                        View highlightingView = tip.highlightingView;
+                        if(highlightingView != null){
+                            AbsoluteLayout.LayoutParams lp = (AbsoluteLayout.LayoutParams)
+                                    highlightingView.getLayoutParams();
+                            lp.x = (int) targetView.getX();
+                            lp.y = (int) targetView.getY();
+                            lp.width = targetView.getWidth();
+                            lp.height = targetView.getHeight();
+                            highlightingView.setLayoutParams(lp);
+                        }
                     }
-                }
-                ViewGroup.LayoutParams lp = tipView.getLayoutParams();
-                if(lp instanceof WindowManager.LayoutParams){
-                    WindowManager.LayoutParams wlp = (WindowManager.LayoutParams) lp;
-                    wlp.x = position.x; wlp.y = position.y;
-                    windowManager.updateViewLayout(tipView, lp);
-                } else if(lp instanceof AbsoluteLayout.LayoutParams){
-                    AbsoluteLayout.LayoutParams alp = (AbsoluteLayout.LayoutParams) lp;
-                    alp.x = position.x; alp.y = position.y;
-                    tipView.setLayoutParams(alp);
-                }
+
+                    // adjust tip view position
+                    int x = position.x, y = position.y;
+                    ViewGroup.LayoutParams lp = tipView.getLayoutParams();
+                    if(lp instanceof WindowManager.LayoutParams){
+                        WindowManager.LayoutParams wlp = (WindowManager.LayoutParams) lp;
+                        wlp.x = x; wlp.y = y;
+                        windowManager.updateViewLayout(tipView, wlp);
+                    } else {
+                        AbsoluteLayout.LayoutParams alp = (AbsoluteLayout.LayoutParams) lp;
+                        alp.x = x; alp.y = y;
+                        tipView.setLayoutParams(alp);
+                    }
+
+                    // animate pointer position if this feature is enabled
+                    if(tip.pointerAnimationEnabled){
+                        final float initialPosition = 0.5F;
+                        final float finalPosition = tipView.getPointerPosition();
+                        if(initialPosition != finalPosition){
+                            Animator animator = ObjectAnimator.ofFloat(
+                                    tipView, "pointerPosition",
+                                    initialPosition, finalPosition);
+                            animator.start();
+                        }
+
+                        Animator animator = ObjectAnimator.ofFloat(
+                                tipView, "pointerProtrusion", 0F, 1F);
+                        animator.start();
+                    }
+
+                    tip = tip.sibling;
+                } while (tip != null);
             }
         });
+    }
+
+    private View getTargetView(Tip tip){
+        if(tip.targetViewCache != null){
+            return tip.targetViewCache;
+        } else {
+            View targetView = findTargetViewForTip(tip);
+            tip.targetViewCache = targetView;
+            return targetView;
+        }
     }
 
     private View findTargetViewForTip(Tip tip){
