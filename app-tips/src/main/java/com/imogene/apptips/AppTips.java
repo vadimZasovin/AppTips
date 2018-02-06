@@ -252,7 +252,9 @@ public final class AppTips {
                         tip.highlightingView = null;
                         // destroy drawing cache of the target view
                         View targetView = getTargetView(tip);
-                        targetView.destroyDrawingCache();
+                        if(!targetView.isDrawingCacheEnabled()){
+                            targetView.destroyDrawingCache();
+                        }
                     }
                 }
                 tip = tip.sibling;
@@ -343,7 +345,9 @@ public final class AppTips {
     }
 
     private boolean highlightView(View targetView, View viewToHighlight){
-        targetView.buildDrawingCache();
+        if(!targetView.isDrawingCacheEnabled()){
+            targetView.buildDrawingCache();
+        }
         Bitmap drawingCache = targetView.getDrawingCache();
         if(drawingCache != null){
             Resources resources = context.getResources();
@@ -505,7 +509,9 @@ public final class AppTips {
                 tip.highlightingView = null;
                 // destroy drawing cache of the target view
                 View targetView = getTargetView(tip);
-                targetView.destroyDrawingCache();
+                if(!targetView.isDrawingCacheEnabled()){
+                    targetView.destroyDrawingCache();
+                }
             }
             int childCount = wrapper.getChildCount();
             if(childCount == 0){
