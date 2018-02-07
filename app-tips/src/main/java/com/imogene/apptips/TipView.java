@@ -152,7 +152,7 @@ class TipView extends AppCompatTextView {
     float getPointerPosition(){
         if(pointerOffset != 0){
             final float position;
-            if(isHorizontalMode()){
+            if(isVerticalMode()){
                 final float width = getWidth();
                 position = (width / 2 + pointerOffset) / width;
             } else {
@@ -170,12 +170,12 @@ class TipView extends AppCompatTextView {
         invalidate();
     }
 
-    private boolean isHorizontalMode(){
+    private boolean isVerticalMode(){
         return mode == MODE_ABOVE_TARGET || mode == MODE_BELOW_TARGET;
     }
 
-    private boolean isVerticalMode(){
-        return !isHorizontalMode();
+    private boolean isHorizontalMode(){
+        return !isVerticalMode();
     }
 
     void setPadding(int padding){
@@ -199,7 +199,7 @@ class TipView extends AppCompatTextView {
 
     @Override
     public void setMinHeight(int minHeight) {
-        if(isHorizontalMode()){
+        if(isVerticalMode()){
             minHeight += pointerSize;
         }
         super.setMinHeight(minHeight);
@@ -207,10 +207,18 @@ class TipView extends AppCompatTextView {
 
     @Override
     public void setMinWidth(int minWidth) {
-        if(isVerticalMode()){
+        if(isHorizontalMode()){
             minWidth += pointerSize;
         }
         super.setMinWidth(minWidth);
+    }
+
+    @Override
+    public void setMaxWidth(int maxPixels) {
+        if(isHorizontalMode()){
+            maxPixels += pointerSize;
+        }
+        super.setMaxWidth(maxPixels);
     }
 
     @Override
@@ -255,7 +263,7 @@ class TipView extends AppCompatTextView {
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
 
-        if(isHorizontalMode()){
+        if(isVerticalMode()){
             height += pointerSize;
         } else {
             width += pointerSize;

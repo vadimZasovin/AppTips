@@ -58,10 +58,9 @@ public class MainActivity extends Activity {
 
     private Tip createThirdTip(){
         Tip tip = appTips.newTip(R.id.text1, "Legolas Elf");
-        tip.setMaxWidth(200);
+        tip.setAlign(Tip.ALIGN_LEFT);
+        tip.setMaxWidth(150);
         tip.setMinWidth(100);
-        tip.setHorizontalOffset(12);
-        tip.setVerticalOffset(12);
         tip.setColor(Color.GREEN);
         tip.setTextColor(Color.DKGRAY);
         return tip;
