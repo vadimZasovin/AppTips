@@ -75,6 +75,12 @@ public class MainActivity extends Activity {
         return tip;
     }
 
+    private Tip createOneMoreTip(){
+        Tip tip = appTips.newTip(R.id.imageButton1, "Smeagol");
+        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
+        return tip;
+    }
+
     private void testAdvancedTips(){
         if(appTips == null){
             appTips = new AppTips(this);
@@ -86,6 +92,7 @@ public class MainActivity extends Activity {
             appTips.addTip(createSecondTip());
             appTips.addTip(createThirdTip());
             appTips.addTip(createFourthTip());
+            appTips.addTip(createOneMoreTip());
         }
         appTips.show();
     }
