@@ -31,7 +31,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by Admin on 25.04.2016.
+ * The object of this class is used to prepare and show tips
+ * for different parts of the UI in {@code Activity} or
+ * {@code Fragment}.
+ * <p>
+ * Simple example:
+ * <pre><code>
+ * // 'this' references to the current activity
+ * AppTips appTips = new AppTips(this);
+ *
+ * Tip tip1 = appTips.newTip(R.id.targetView1, "tip1 text");
+ *
+ * View targetView2 = findViewById(R.id.targetView2);
+ * Tip tip2 = appTips.newTip(targetView2, "tip 2 text");
+ *
+ * int tip3X = getXCoordinateForTip3();
+ * int tip3Y = getYCoordinateForTip3();
+ * Tip tip3 = appTips.newTip(tip3X, tip3Y, R.string.tip_3_text);
+ *
+ * appTips.addTips(true, tip1, tip2);
+ * appTips.addTip(tip3);
+ * appTips.show();
+ * </code></pre>
  */
 @SuppressWarnings("deprecation")
 public final class AppTips {
@@ -115,24 +136,85 @@ public final class AppTips {
         supportFragment = fragment;
     }
 
+    /**
+     * Creates and returns new {@code Tip} object for the given target
+     * and with the specified text.
+     * @param targetId {@code id} of the target view of the tip.
+     * @param text text message of the tip.
+     * @return new {@code Tip} object.
+     * @see #newTip(int, int)
+     * @see #newTip(View, CharSequence)
+     * @see #newTip(View, int)
+     */
     public Tip newTip(@IdRes int targetId, CharSequence text){
         return new Tip(context, targetId, text);
     }
 
+    /**
+     * Creates and returns new {@code Tip} object for the given target
+     * and with the specified text.
+     * @param targetId {@code id} of the target view of the tip.
+     * @param textRes resource id of the text message of the tip.
+     * @return new {@code Tip} object.
+     * @see #newTip(int, CharSequence)
+     * @see #newTip(View, CharSequence)
+     * @see #newTip(View, int)
+     */
     public Tip newTip(@IdRes int targetId, @StringRes int textRes){
         String text = context.getString(textRes);
         return newTip(targetId, text);
     }
 
+    /**
+     * Creates and returns new {@code Tip} object for the given target
+     * and with the specified text.
+     * @param targetView target view of the tip.
+     * @param text text message of the tip.
+     * @return new {@code Tip} object.
+     * @see #newTip(int, CharSequence)
+     * @see #newTip(int, int)
+     * @see #newTip(View, int)
+     */
     public Tip newTip(View targetView, CharSequence text){
         return new Tip(context, targetView, text);
     }
 
+    /**
+     * Creates and returns new {@code Tip} object for the given target
+     * and with the specified text.
+     * @param targetView target view of the tip.
+     * @param textRes resource id of the text message of the tip.
+     * @return new {@code Tip} object.
+     * @see #newTip(int, CharSequence)
+     * @see #newTip(int, int)
+     * @see #newTip(View, CharSequence)
+     */
     public Tip newTip(View targetView, @StringRes int textRes){
         String text = context.getString(textRes);
         return newTip(targetView, text);
     }
 
+    /**
+     * Creates and returns new {@code Tip} object for the given target
+     * coordinates and with the specified text. The coordinates of the
+     * target are specified as screen pixels without taking into account
+     * such systems windows as status bar.
+     * <p>
+     * You can use this method when it is not so trivial to provide a
+     * target view for the tip, for example when the tip needs to be
+     * associated with some point of the image on the screen and you
+     * know the positions and sizes of the image. Or when the tip is
+     * created for an option's icon in the {@code Toolbar}.
+     * <p>
+     * Highlighting is disabled by default for the returned {@code Tip},
+     * because there is not target view to highlight, but you can manually
+     * enable it to highlight only tip view itself.
+     * @param targetX X coordinate in screen pixels of the target.
+     * @param targetY Y coordinate in screen pixels of the target.
+     * @param text text message of the tip.
+     * @return new {@code Tip} object.
+     * @see #newTip(int, int, int)
+     */
     public Tip newTip(int targetX, int targetY, CharSequence text){
         Point target = new Point(targetX, targetY);
         Tip tip = new Tip(context, target, text);
@@ -140,16 +222,54 @@ public final class AppTips {
         return tip;
     }
 
+    /**
+     * Creates and returns new {@code Tip} object for the given target
+     * coordinates and with the specified text. The coordinates of the
+     * target are specified as screen pixels without taking into account
+     * such systems windows as status bar.
+     * <p>
+     * You can use this method when it is not so trivial to provide a
+     * target view for the tip, for example when the tip needs to be
+     * associated with some point of the image on the screen and you
+     * know the positions and sizes of the image. Or when the tip is
+     * created for an option's icon in the {@code Toolbar}.
+     * <p>
+     * Highlighting is disabled by default for the returned {@code Tip},
+     * because there is not target view to highlight, but you can manually
+     * enable it to highlight only tip view itself.
+     * @param targetX X coordinate in screen pixels of the target.
+     * @param targetY Y coordinate in screen pixels of the target.
+     * @param textRes resource id of the text message of the tip.
+     * @return new {@code Tip} object.
+     * @see #newTip(int, int, CharSequence)
+     */
     public Tip newTip(int targetX, int targetY, @StringRes int textRes){
         String text = context.getString(textRes);
         return newTip(targetX, targetY, text);
     }
 
+    /**
+     * Adds the specified {@code Tip} to this object. The tips are shown
+     * then with the {@link #show()} or {@link #showNext()} methods in the
+     * order in which they were added.
+     * @param tip the tip to add.
+     * @see #addTips(boolean, Tip...)
+     */
     public void addTip(Tip tip){
         Util.checkNonNullParameter(tip, "tip");
         tips.add(tip);
     }
 
+    /**
+     * Adds the specified {@code Tip}s to this object. These tips are
+     * displayed simultaneously. The tips are shown with the {@link #show()}
+     * or {@link #showNext()} methods in the order in which they were added.
+     * @param highlightingEnabled indicates whether the highlighting is enabled
+     *                            for the specified group of tips or not. The
+     *                            value of the similar property for each
+     *                            specified tip is ignored.
+     * @param tips the tips to add.
+     */
     public void addTips(boolean highlightingEnabled, Tip... tips){
         Util.checkNonNullParameter(tips, "tips");
         int length = tips.length;
@@ -163,6 +283,16 @@ public final class AppTips {
                 tip = sibling;
             }
         }
+    }
+
+    /**
+     * Adds the specified {@code Tip}s to this object. Calls the
+     * {@link #addTips(boolean, Tip...)} method with
+     * {@code highlightingEnabled} parameter set to {@code true}.
+     * @param tips the tips to add.
+     */
+    public void addTips(Tip... tips){
+        addTips(true, tips);
     }
 
     /**
