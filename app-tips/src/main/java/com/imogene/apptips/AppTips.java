@@ -184,16 +184,17 @@ public final class AppTips {
     }
 
     /**
-     * Shows the first portion of tips if there are no tips
-     * shown currently.
+     * Shows the current portion of tips if there are no tips
+     * shown currently. This method can be used to show tips for
+     * the first time or to resume showing the tips that was
+     * closed before.
      * <p>
      * To show the next tips, use {@link #showNext()} method instead.
      * @see #showNext()
      */
     public void show(){
         if(!isShown()){
-            currentIndex = 0;
-            showTips(0);
+            showTips(currentIndex);
         }
     }
 
