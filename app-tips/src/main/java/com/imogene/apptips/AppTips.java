@@ -49,7 +49,7 @@ import java.util.List;
  * int tip3Y = getYCoordinateForTip3();
  * Tip tip3 = appTips.newTip(tip3X, tip3Y, R.string.tip_3_text);
  *
- * appTips.addTips(true, tip1, tip2);
+ * appTips.addTips(false, tip1, tip2);
  * appTips.addTip(tip3);
  * appTips.show();
  * </code></pre>
