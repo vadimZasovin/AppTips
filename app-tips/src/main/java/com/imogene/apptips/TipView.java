@@ -10,7 +10,6 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
 import android.graphics.drawable.shapes.Shape;
 import android.support.v7.widget.AppCompatTextView;
-import android.view.Gravity;
 
 /**
  * Created by Admin on 25.04.2016.
@@ -60,8 +59,6 @@ class TipView extends AppCompatTextView {
         };
         Shape shape = new RoundRectShape(radii, null, null);
         drawable = new ShapeDrawable(shape);
-
-        setGravity(Gravity.CENTER);
     }
 
     void setColor(int color) {

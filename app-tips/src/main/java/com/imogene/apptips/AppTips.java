@@ -569,6 +569,7 @@ public final class AppTips {
         tip.tipView = tipView;
         tipView.setColor(tip.color);
         tipView.setTextColor(tip.textColor);
+        tipView.setGravity(tip.gravity);
         tipView.setOnTouchListener(tipViewTouchListener);
         tipView.setText(tip.text);
         int align = tip.align;

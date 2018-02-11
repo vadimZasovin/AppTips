@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
 import android.support.annotation.IdRes;
+import android.view.Gravity;
 import android.view.View;
 
 /**
@@ -59,6 +60,7 @@ public final class Tip {
 
     int color;
     int textColor;
+    int gravity;
     int padding;
     int align;
     int minHeight;
@@ -104,6 +106,7 @@ public final class Tip {
         Resources resources = context.getResources();
         color = obtainDefaultColor(context);
         textColor = Color.WHITE;
+        gravity = Gravity.CENTER;
         padding = resources.getDimensionPixelSize(R.dimen.tip_view_default_padding);
         minHeight = resources.getDimensionPixelSize(R.dimen.tip_view_default_min_height);
         minWidth = resources.getDimensionPixelSize(R.dimen.tip_view_default_min_width);
@@ -167,6 +170,23 @@ public final class Tip {
      */
     public int getTextColor() {
         return textColor;
+    }
+
+    /**
+     * Sets the gravity of the tip view. The default gravity
+     * is {@link Gravity#CENTER}.
+     * @param gravity gravity of the tip view.
+     */
+    public void setGravity(int gravity) {
+        this.gravity = gravity;
+    }
+
+    /**
+     * Returns the current gravity of the tip view.
+     * @return gravity of the tip view.
+     */
+    public int getGravity() {
+        return gravity;
     }
 
     /**

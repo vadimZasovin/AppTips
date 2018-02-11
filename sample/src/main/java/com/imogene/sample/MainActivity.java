@@ -3,6 +3,7 @@ package com.imogene.sample;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 
 import com.imogene.apptips.AppTips;
@@ -72,6 +73,7 @@ public class MainActivity extends Activity {
         tip.setAlign(Tip.ALIGN_CENTER_ABOVE);
         tip.setHighlightingEnabled(true);
         tip.setPointerPosition(0.7F);
+        tip.setGravity(Gravity.START);
         return tip;
     }
 
