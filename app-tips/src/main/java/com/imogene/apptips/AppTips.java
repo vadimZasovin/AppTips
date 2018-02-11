@@ -18,6 +18,7 @@ import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.view.ViewCompat;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -569,6 +570,7 @@ public final class AppTips {
         tip.tipView = tipView;
         tipView.setColor(tip.color);
         tipView.setTextColor(tip.textColor);
+        tipView.setTextSize(TypedValue.COMPLEX_UNIT_PX, tip.textSize);
         tipView.setGravity(tip.gravity);
         tipView.setOnTouchListener(tipViewTouchListener);
         tipView.setText(tip.text);

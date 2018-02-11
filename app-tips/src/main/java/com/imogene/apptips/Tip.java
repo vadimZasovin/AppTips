@@ -60,6 +60,7 @@ public final class Tip {
 
     int color;
     int textColor;
+    int textSize;
     int gravity;
     int padding;
     int align;
@@ -106,6 +107,7 @@ public final class Tip {
         Resources resources = context.getResources();
         color = obtainDefaultColor(context);
         textColor = Color.WHITE;
+        textSize = resources.getDimensionPixelSize(R.dimen.tip_view_default_text_size);
         gravity = Gravity.CENTER;
         padding = resources.getDimensionPixelSize(R.dimen.tip_view_default_padding);
         minHeight = resources.getDimensionPixelSize(R.dimen.tip_view_default_min_height);
@@ -170,6 +172,23 @@ public final class Tip {
      */
     public int getTextColor() {
         return textColor;
+    }
+
+    /**
+     * Stets the text size of the tip in pixels. The default value is
+     * {@code 14sp}.
+     * @param textSize size of the text of the tip.
+     */
+    public void setTextSize(int textSize) {
+        this.textSize = textSize;
+    }
+
+    /**
+     * Returns the current text size of the tip.
+     * @return text size of the tip.
+     */
+    public int getTextSize() {
+        return textSize;
     }
 
     /**
