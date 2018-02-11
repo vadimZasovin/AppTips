@@ -208,7 +208,7 @@ public final class AppTips {
      * created for an option's icon in the {@code Toolbar}.
      * <p>
      * Highlighting is disabled by default for the returned {@code Tip},
-     * because there is not target view to highlight, but you can manually
+     * because there is no target view to highlight, but you can manually
      * enable it to highlight only tip view itself.
      * @param targetX X coordinate in screen pixels of the target.
      * @param targetY Y coordinate in screen pixels of the target.
@@ -236,7 +236,7 @@ public final class AppTips {
      * created for an option's icon in the {@code Toolbar}.
      * <p>
      * Highlighting is disabled by default for the returned {@code Tip},
-     * because there is not target view to highlight, but you can manually
+     * because there is no target view to highlight, but you can manually
      * enable it to highlight only tip view itself.
      * @param targetX X coordinate in screen pixels of the target.
      * @param targetY Y coordinate in screen pixels of the target.
