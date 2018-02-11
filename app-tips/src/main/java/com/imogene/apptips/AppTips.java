@@ -529,7 +529,7 @@ public final class AppTips {
         lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.format = PixelFormat.TRANSLUCENT;
-        lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+        lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
                 WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         lp.dimAmount = DIM_AMOUNT;
@@ -592,7 +592,7 @@ public final class AppTips {
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.format = PixelFormat.TRANSLUCENT;
         lp.windowAnimations = android.R.style.Animation_Dialog;
-        lp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+        lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         if(watchOutsideTouch){
             lp.flags |= WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
         }
