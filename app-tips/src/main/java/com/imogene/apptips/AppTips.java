@@ -68,7 +68,7 @@ public final class AppTips {
 
     private final List<Tip> tips = new ArrayList<>();
     private int currentIndex;
-    private Point position = new Point();
+    private int[] position = new int[2];
     private ViewGroup wrapper;
 
     private OnCloseListener onCloseListener;
@@ -532,7 +532,8 @@ public final class AppTips {
         lp.format = PixelFormat.TRANSLUCENT;
         lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
                 WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
-                WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                WindowManager.LayoutParams.FLAG_DIM_BEHIND |
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
         lp.dimAmount = DIM_AMOUNT;
         return lp;
     }
@@ -595,7 +596,8 @@ public final class AppTips {
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.format = PixelFormat.TRANSLUCENT;
         lp.windowAnimations = android.R.style.Animation_Dialog;
-        lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
         if(watchOutsideTouch){
             lp.flags |= WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
         }
@@ -797,30 +799,32 @@ public final class AppTips {
 
                 Tip tip = tips.get(currentIndex);
                 do {
-                    TipView tipView = tip.tipView;
-                    Point target = tip.target;
+                    final TipView tipView = tip.tipView;
+                    final Point target = tip.target;
+
                     if(target != null){
                         int x = target.x, y = target.y;
                         getTipViewPosition(x, y, tipView, tip);
                     } else {
                         View targetView = getTargetView(tip);
                         getTipViewPosition(targetView, tipView, tip);
+                    }
+                    final int x = position[0], y = position[1];
 
-                        // adjust highlighting view size and position
-                        View highlightingView = tip.highlightingView;
-                        if(highlightingView != null){
-                            AbsoluteLayout.LayoutParams lp = (AbsoluteLayout.LayoutParams)
-                                    highlightingView.getLayoutParams();
-                            lp.x = (int) targetView.getX();
-                            lp.y = (int) targetView.getY();
-                            lp.width = targetView.getWidth();
-                            lp.height = targetView.getHeight();
-                            highlightingView.setLayoutParams(lp);
-                        }
+                    // adjust highlighting view size and position
+                    View highlightingView = tip.highlightingView;
+                    if(highlightingView != null){
+                        View targetView = getTargetView(tip);
+                        targetView.getLocationInWindow(position);
+                        AbsoluteLayout.LayoutParams lp = (AbsoluteLayout.LayoutParams)
+                                highlightingView.getLayoutParams();
+                        lp.x = position[0]; lp.y = position[1];
+                        lp.width = targetView.getWidth();
+                        lp.height = targetView.getHeight();
+                        highlightingView.setLayoutParams(lp);
                     }
 
                     // adjust tip view position
-                    int x = position.x, y = position.y;
                     ViewGroup.LayoutParams lp = tipView.getLayoutParams();
                     if(lp instanceof WindowManager.LayoutParams){
                         WindowManager.LayoutParams wlp = (WindowManager.LayoutParams) lp;
@@ -899,8 +903,9 @@ public final class AppTips {
      * their dimensions set.
      */
     private void getTipViewPosition(View targetView, View tipView, Tip tip){
-        int targetX = (int) targetView.getX();
-        int targetY = (int) targetView.getY();
+        targetView.getLocationInWindow(position);
+        int targetX = position[0];
+        int targetY = position[1];
         int targetHeight = targetView.getHeight();
         int targetWidth = targetView.getWidth();
         getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tipView, tip);
@@ -970,7 +975,7 @@ public final class AppTips {
                 y = targetY + delta + offsetY;
                 break;
         }
-        position.set(x, y);
+        position[0] = x; position[1] = y;
     }
 
     /**

@@ -30,15 +30,20 @@
         android:layout_marginTop="48dp"
         android:text="Hello everything!!!"/>
 
-    <ImageButton
-        android:id="@+id/imageButton1"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="100dp"
-        android:layout_gravity="center_horizontal"
-        android:src="@android:drawable/ic_btn_speak_now"
-        android:background="@drawable/test_background"
-        android:clickable="true"
-        android:focusable="true"/>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageButton
+            android:id="@+id/imageButton1"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:background="@drawable/test_background"
+            android:clickable="true"
+            android:focusable="true"/>
+
+    </FrameLayout>
 
 </LinearLayout>
