@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="tipColor" format="color"/>
+    <attr name="tipTextAppearance" format="reference"/>
+    <attr name="tipGravity" format="enum">
+        <enum name="start" value="1"/>
+        <enum name="center" value="2"/>
+    </attr>
+    <attr name="tipPadding" format="dimension"/>
+    <attr name="tipMinHeight" format="dimension"/>
+    <attr name="tipMinWidth" format="dimension"/>
+    <attr name="tipMaxWidth" format="dimension"/>
+    <attr name="tipAnimatePointer" format="boolean"/>
+    <attr name="tipHighlighting" format="boolean"/>
+
+    <style name="AppTipsTheme" parent="Theme.AppCompat.Dialog">
+
+    </style>
+</resources>
