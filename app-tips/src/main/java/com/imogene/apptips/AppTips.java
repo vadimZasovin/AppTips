@@ -8,6 +8,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.RectF;
@@ -410,11 +411,6 @@ public final class AppTips {
                         windowManager.removeView(tipView);
                     } else if(tip.highlightingView != null){
                         tip.highlightingView = null;
-                        // destroy drawing cache of the target view
-                        View targetView = getTargetView(tip);
-                        if(!targetView.isDrawingCacheEnabled()){
-                            targetView.destroyDrawingCache();
-                        }
                     }
                 }
                 tip = tip.sibling;
@@ -457,9 +453,7 @@ public final class AppTips {
                 tip = tip.sibling;
                 continue;
             }
-            View highlightingView = new View(context);
-            View targetView = getTargetView(tip);
-            setupHighlighting(targetView, highlightingView);
+            final View highlightingView = new View(context);
             tip.highlightingView = highlightingView;
             highlightingView.setTag(R.id.tag_id_tip, tip);
             highlightingView.setOnClickListener(highlightingViewClickListener);
@@ -479,43 +473,6 @@ public final class AppTips {
         WindowManager.LayoutParams lp = getWrapperLayoutParams();
         windowManager.addView(wrapper, lp);
         adjustPositions();
-    }
-
-    /**
-     * Setup highlighting for the view by using target view's drawing
-     * cache bitmap as the background. If the drawing cache is not
-     * prepared yet this method registers an onPreDrawListener to
-     * wait for the target view to be drawn to obtain it's drawing
-     * cache.
-     */
-    private void setupHighlighting(final View targetView, final View viewToHighlight){
-        if(!highlightView(targetView, viewToHighlight)){
-            ViewTreeObserver observer = targetView.getViewTreeObserver();
-            observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    if(highlightView(targetView, viewToHighlight)){
-                        ViewTreeObserver observer = targetView.getViewTreeObserver();
-                        observer.removeOnPreDrawListener(this);
-                    }
-                    return true;
-                }
-            });
-        }
-    }
-
-    private boolean highlightView(View targetView, View viewToHighlight){
-        if(!targetView.isDrawingCacheEnabled()){
-            targetView.buildDrawingCache();
-        }
-        Bitmap drawingCache = targetView.getDrawingCache();
-        if(drawingCache != null){
-            Resources resources = context.getResources();
-            Drawable background = new BitmapDrawable(resources, drawingCache);
-            viewToHighlight.setBackground(background);
-            return true;
-        }
-        return false;
     }
 
     private AbsoluteLayout.LayoutParams getLayoutParamsForWrapper(){
@@ -671,11 +628,6 @@ public final class AppTips {
             if(highlightingView != null){
                 wrapper.removeView(highlightingView);
                 tip.highlightingView = null;
-                // destroy drawing cache of the target view
-                View targetView = getTargetView(tip);
-                if(!targetView.isDrawingCacheEnabled()){
-                    targetView.destroyDrawingCache();
-                }
             }
             int childCount = wrapper.getChildCount();
             if(childCount == 0){
@@ -811,19 +763,6 @@ public final class AppTips {
                     }
                     final int x = position[0], y = position[1];
 
-                    // adjust highlighting view size and position
-                    View highlightingView = tip.highlightingView;
-                    if(highlightingView != null){
-                        View targetView = getTargetView(tip);
-                        targetView.getLocationInWindow(position);
-                        AbsoluteLayout.LayoutParams lp = (AbsoluteLayout.LayoutParams)
-                                highlightingView.getLayoutParams();
-                        lp.x = position[0]; lp.y = position[1];
-                        lp.width = targetView.getWidth();
-                        lp.height = targetView.getHeight();
-                        highlightingView.setLayoutParams(lp);
-                    }
-
                     // adjust tip view position
                     ViewGroup.LayoutParams lp = tipView.getLayoutParams();
                     if(lp instanceof WindowManager.LayoutParams){
@@ -834,6 +773,32 @@ public final class AppTips {
                         AbsoluteLayout.LayoutParams alp = (AbsoluteLayout.LayoutParams) lp;
                         alp.x = x; alp.y = y;
                         tipView.setLayoutParams(alp);
+                    }
+
+                    // adjust highlighting view size and position
+                    // and also it's background
+                    View highlightingView = tip.highlightingView;
+                    if(highlightingView != null){
+                        View targetView = getTargetView(tip);
+                        targetView.getLocationInWindow(position);
+                        final int targetX = position[0], targetY = position[1];
+                        final int targetWidth = targetView.getWidth();
+                        final int targetHeight = targetView.getHeight();
+
+                        AbsoluteLayout.LayoutParams hlp = (AbsoluteLayout.LayoutParams)
+                                highlightingView.getLayoutParams();
+                        hlp.x = targetX; hlp.y = targetY;
+                        hlp.width = targetWidth;
+                        hlp.height = targetHeight;
+                        highlightingView.setLayoutParams(hlp);
+
+                        Bitmap.Config config = Bitmap.Config.ARGB_8888;
+                        Bitmap bitmap = Bitmap.createBitmap(targetWidth, targetHeight, config);
+                        Canvas canvas = new Canvas(bitmap);
+                        targetView.draw(canvas);
+                        Resources resources = context.getResources();
+                        Drawable background = new BitmapDrawable(resources, bitmap);
+                        highlightingView.setBackground(background);
                     }
 
                     // animate pointer position if this feature is enabled
