@@ -1,19 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <attr name="tipColor" format="color"/>
-    <attr name="tipTextAppearance" format="reference"/>
-    <attr name="tipGravity" format="enum">
-        <enum name="start" value="1"/>
-        <enum name="center" value="2"/>
-    </attr>
-    <attr name="tipPadding" format="dimension"/>
-    <attr name="tipMinHeight" format="dimension"/>
-    <attr name="tipMinWidth" format="dimension"/>
-    <attr name="tipMaxWidth" format="dimension"/>
-    <attr name="tipAnimatePointer" format="boolean"/>
-    <attr name="tipHighlighting" format="boolean"/>
 
-    <style name="AppTipsTheme" parent="Theme.AppCompat.Dialog">
+    <!--tip style attributes-->
+    <declare-styleable name="Tip">
+        <attr name="tipColor" format="color"/>
+        <attr name="tipTextAppearance" format="reference"/>
+        <attr name="tipGravity" format="enum">
+            <enum name="start" value="1"/>
+            <enum name="center" value="2"/>
+        </attr>
+        <attr name="tipPadding" format="dimension"/>
+        <attr name="tipMinHeight" format="dimension"/>
+        <attr name="tipMinWidth" format="dimension"/>
+        <attr name="tipMaxWidth" format="dimension"/>
+        <attr name="tipAnimatePointer" format="boolean"/>
+        <attr name="tipHighlighting" format="boolean"/>
+    </declare-styleable>
 
+    <!--default tip style-->
+    <style name="TipStyle">
+        <item name="tipColor">?colorControlNormal</item>
+        <item name="tipTextAppearance">@style/TextAppearance.AppCompat.Small.Inverse</item>
+        <item name="tipGravity">center</item>
+        <item name="tipPadding">@dimen/tip_view_default_padding</item>
+        <item name="tipMinHeight">@dimen/tip_view_default_min_height</item>
+        <item name="tipMinWidth">@dimen/tip_view_default_min_width</item>
+        <item name="tipMaxWidth">@dimen/tip_view_default_max_width</item>
+        <item name="tipAnimatePointer">true</item>
+        <item name="tipHighlighting">true</item>
     </style>
+
+    <!--tip style theme attribute-->
+    <attr name="tipStyle" format="reference"/>
+
 </resources>

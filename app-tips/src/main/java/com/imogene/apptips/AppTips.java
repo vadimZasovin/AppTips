@@ -527,9 +527,13 @@ public final class AppTips {
         tipView.setTag(R.id.tag_id_tip, tip);
         tip.tipView = tipView;
         tipView.setColor(tip.color);
+        tipView.setTextAppearance(context, tip.textAppearanceRes);
         tipView.setTextColor(tip.textColor);
         tipView.setTextSize(TypedValue.COMPLEX_UNIT_PX, tip.textSize);
-        tipView.setGravity(tip.gravity);
+        int gravity = tip.gravity == Tip.GRAVITY_START ?
+                Gravity.START | Gravity.CENTER_VERTICAL :
+                Gravity.CENTER;
+        tipView.setGravity(gravity);
         tipView.setOnTouchListener(tipViewTouchListener);
         tipView.setText(tip.text);
         int align = tip.align;

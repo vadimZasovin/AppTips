@@ -1,13 +1,13 @@
 package com.imogene.apptips;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Point;
-import android.os.Build;
 import android.support.annotation.IdRes;
+import android.support.annotation.StyleRes;
+import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 
@@ -17,12 +17,38 @@ import android.view.View;
  * by using the {@link AppTips#newTip(int, CharSequence)}
  * method or it's overloads. You can further customize the
  * returned object by changing some of it's properties such
- * as color, alignment, pointer position etc. Note that all
- * customizable properties has default values which are
- * appropriate for most cases. The default values are noted
- * for each concrete property.
+ * as color, alignment, pointer position etc.
+ * <p>
+ * Note that all customizable properties has default values and
+ * some of these values are taken from the theme. You can change
+ * the default values by creating your own style and setting
+ * up it in the app theme:
+ * <pre><code>
+ * &lt;style name="MyOwnTipStyle" parent="TipStyle"&gt;
+ *     &lt;item name="tipColor"&gt;@color/my_tip_color&lt;/item&gt;
+ *     &lt;item name="tipTextAppearance"&gt;@style/MyTipTextAppearance&lt;/item&gt;
+ *     &lt;item name="tipGravity"&gt;start&lt;/item&gt;
+ *     &lt;item name="tipPadding"&gt;8dp&lt;/item&gt;
+ *     &lt;item name="tipMinHeight"&gt;64dp&lt;/item&gt;
+ *     &lt;item name="tipMinWidth"&gt;96dp&lt;/item&gt;
+ *     &lt;item name="tipMaxWidth"&gt;300dp&lt;/item&gt;
+ *     &lt;item name="tipAnimatePointer"&gt;false&lt;/item&gt;
+ *     &lt;item name="tipHighlighting"&gt;true&lt;/item&gt;
+ * &lt;/style&gt;
+ *
+ * &lt;style name="AppTheme" parent="..."&gt;
+ *     ...
+ *     &lt;item name="tipStyle"&gt;@style/MyOwnTipStyle&lt;/item&gt;
+ * &lt;/style&gt;
+ * </code></pre>
  */
 public final class Tip {
+
+    /** Tip gravity. Aligns the text inside the tip view to the start. */
+    public static final int GRAVITY_START = 1;
+
+    /** Tip gravity. aligns the text inside the tip view to the center. */
+    public static final int GRAVITY_CENTER = 2;
 
     /** Tip alignment. Aligns the tip view above and to the left of the target. */
     public static final int ALIGN_LEFT_ABOVE = 1;
@@ -53,12 +79,15 @@ public final class Tip {
      */
     public static final int ALIGN_RIGHT = 8;
 
+    private static final int DEFAULT_TEXT_SIZE_SP = 14;
+
     final int targetId;
     final View targetView;
     final Point target;
     final CharSequence text;
 
     int color;
+    int textAppearanceRes;
     int textColor;
     int textSize;
     int gravity;
@@ -104,45 +133,48 @@ public final class Tip {
     }
 
     private void initializeDefaults(Context context){
-        Resources resources = context.getResources();
-        color = obtainDefaultColor(context);
-        textColor = Color.WHITE;
-        textSize = resources.getDimensionPixelSize(R.dimen.tip_view_default_text_size);
-        gravity = Gravity.CENTER;
-        padding = resources.getDimensionPixelSize(R.dimen.tip_view_default_padding);
-        minHeight = resources.getDimensionPixelSize(R.dimen.tip_view_default_min_height);
-        minWidth = resources.getDimensionPixelSize(R.dimen.tip_view_default_min_width);
-        maxWidth = resources.getDimensionPixelSize(R.dimen.tip_view_default_max_width);
+        // get the default values that appears in the style
+        TypedArray array = context.obtainStyledAttributes(
+                null, R.styleable.Tip, R.attr.tipStyle, R.style.TipStyle);
+        try {
+            color = array.getColor(R.styleable.Tip_tipColor, 0);
+            textAppearanceRes = array.getResourceId(R.styleable.Tip_tipTextAppearance, 0);
+
+            // get the default text color and size from the text appearance resource
+            // in order to have the actual value to return from the appropriate getters
+            final int[] attrs = new int[]{android.R.attr.textColor, android.R.attr.textSize};
+            TypedArray taArray = context.obtainStyledAttributes(textAppearanceRes, attrs);
+            try {
+                textColor = taArray.getColor(0, Color.WHITE);
+                Resources resources = context.getResources();
+                DisplayMetrics metrics = resources.getDisplayMetrics();
+                int defaultSize = metrics.densityDpi * DEFAULT_TEXT_SIZE_SP / 160;
+                textSize = taArray.getDimensionPixelSize(1, defaultSize);
+            } finally {
+                taArray.recycle();
+            }
+
+            gravity = array.getInteger(R.styleable.Tip_tipGravity, 0);
+            padding = array.getDimensionPixelSize(R.styleable.Tip_tipPadding, 0);
+            minHeight = array.getDimensionPixelSize(R.styleable.Tip_tipMinHeight, 0);
+            minWidth = array.getDimensionPixelSize(R.styleable.Tip_tipMinWidth, 0);
+            maxWidth = array.getDimensionPixelSize(R.styleable.Tip_tipMaxWidth, 0);
+            pointerAnimationEnabled = array.getBoolean(R.styleable.Tip_tipAnimatePointer, true);
+            highlightingEnabled = array.getBoolean(R.styleable.Tip_tipHighlighting, true);
+        } finally {
+            array.recycle();
+        }
+
+        // set the rest defaults
         align = ALIGN_LEFT_BELOW;
         pointerPosition = 0.5f;
         pointerOffset = 0;
-        pointerAnimationEnabled = true;
         verticalOffset = 0;
         horizontalOffset = 0;
-        highlightingEnabled = true;
-    }
-
-    @SuppressWarnings("ResourceType")
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private static int obtainDefaultColor(Context context){
-        final boolean isLollipop = Util.checkApiVersion(Build.VERSION_CODES.LOLLIPOP);
-        final int[] attrs = !isLollipop ? new int[]{R.attr.colorAccent} :
-                new int[]{android.R.attr.colorAccent, R.attr.colorAccent};
-        final int fallbackColor = Color.DKGRAY;
-        TypedArray array = context.getTheme().obtainStyledAttributes(attrs);
-        try {
-            int defaultColor = isLollipop ? array.getColor(1, fallbackColor) : fallbackColor;
-            return array.getColor(0, defaultColor);
-        }finally {
-            array.recycle();
-        }
     }
 
     /**
-     * Sets the color of the tip view. The default color is the
-     * {@code R.attr.colorAccent} or {@code android.R.attr.colorAccent}
-     * from the application theme. If such a color is not defined in the
-     * theme the default value is {@link Color#DKGRAY}.
+     * Sets the color of the tip view.
      * @param color new color of the tip.
      */
     public void setColor(int color){
@@ -158,8 +190,16 @@ public final class Tip {
     }
 
     /**
-     * Sets the text color of the tip. The default text color is
-     * white ({@link Color#WHITE}).
+     * Sets the text appearance of the tip view.
+     * @param styleRes the resource id of the new text appearance style
+     *                 of the tip view.
+     */
+    public void setTextAppearance(@StyleRes int styleRes){
+        textAppearanceRes = styleRes;
+    }
+
+    /**
+     * Sets the text color of the tip.
      * @param textColor new text color of the tip.
      */
     public void setTextColor(int textColor){
@@ -175,8 +215,7 @@ public final class Tip {
     }
 
     /**
-     * Stets the text size of the tip in pixels. The default value is
-     * {@code 14sp}.
+     * Stets the text size of the tip in pixels.
      * @param textSize size of the text of the tip.
      */
     public void setTextSize(int textSize) {
@@ -192,8 +231,8 @@ public final class Tip {
     }
 
     /**
-     * Sets the gravity of the tip view. The default gravity
-     * is {@link Gravity#CENTER}.
+     * Sets the gravity of the tip view. Can be either
+     * {@link #GRAVITY_CENTER} or {@link #GRAVITY_START}.
      * @param gravity gravity of the tip view.
      */
     public void setGravity(int gravity) {
@@ -209,8 +248,7 @@ public final class Tip {
     }
 
     /**
-     * Sets the padding of the tip view in pixels. The default value
-     * is {@code 4dp}.
+     * Sets the padding of the tip view in pixels.
      * @param padding new padding of the tip view in pixels.
      */
     public void setPadding(int padding){
@@ -228,7 +266,6 @@ public final class Tip {
     /**
      * Sets the alignment of the tip view. There are 8 possible
      * values and they are listed as constants in this class.
-     * The default value is {@link #ALIGN_LEFT_BELOW}.
      * @param align the desired alignment of the tip view.
      */
     public void setAlign(int align){
@@ -250,8 +287,7 @@ public final class Tip {
     /**
      * Sets the minimum height of the tip view in pixels. This value
      * specifies the minimum height of the rectangle with a text,
-     * without taking into account the pointer triangle. The default
-     * value is {@code 36dp}.
+     * without taking into account the pointer triangle.
      * @param minHeight minimum height of the tip view in pixels.
      */
     public void setMinHeight(int minHeight){
@@ -269,8 +305,7 @@ public final class Tip {
     /**
      * Sets the minimum width of the tip view in pixels. This value
      * specifies the minimum width of the rectangle with a text,
-     * without taking into account the pointer triangle. The default
-     * value is {@code 144dp}.
+     * without taking into account the pointer triangle.
      * @param minWidth minimum width of the tip view in pixels.
      */
     public void setMinWidth(int minWidth){
@@ -288,8 +323,7 @@ public final class Tip {
     /**
      * Sets the maximum width of the tip view in pixels. This value
      * specifies the maximum width of the rectangle with a text,
-     * without taking into account the pointer triangle. The default
-     * value is {@code 248dp}.
+     * without taking into account the pointer triangle.
      * @param maxWidth maximum width of the tip view in pixels.
      */
     public void setMaxWidth(int maxWidth){
@@ -365,7 +399,6 @@ public final class Tip {
      * the appearing of the pointer will be animated if this property is
      * enabled.
      * <p>
-     * The default value is {@code true}.
      * @param pointerAnimationEnabled boolean specifying whether the pointer
      *                                should be animated or not.
      */
@@ -424,7 +457,7 @@ public final class Tip {
      * this tip. The highlighting means that the tip view and
      * the corresponding target view (if it is specified) will
      * be visually highlighted by dimming the screen behind, and
-     * thus making them brighter. The default value is {@code true}.
+     * thus making them brighter.
      * @param highlightingEnabled boolean specifying whether the
      *                            highlighting is enabled or not.
      */
