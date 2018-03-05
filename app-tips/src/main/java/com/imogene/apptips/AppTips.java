@@ -840,6 +840,11 @@ public final class AppTips {
         return targetView;
     }
 
+    /**
+     * Determines the most appropriate for the given tip by the
+     * specified target position and size. This method is used when
+     * the initial alignment (set by the user) has value {@link Tip#ALIGN_AUTO}.
+     */
     private int determineTipAlignment(int targetX, int targetY, int targetWidth,
                                       int targetHeight, Tip tip){
         Window window = getActivityWindow();
