@@ -24,11 +24,17 @@ class TipView extends AppCompatTextView {
     private static final float MIN_POINTER_POSITION = 0.1F;
     private static final float MAX_POINTER_POSITION = 0.9F;
 
-    private final int pointerSize;
+    final int pointerSize;
+    private int mode = MODE_BELOW_TARGET;
+    private int padding;
+    private int minWidth;
+    private int maxWidth;
+    private int minHeight;
+
     private float pointerPosition = 0.5F;
     private int pointerOffset = 0;
     private float pointerProtrusion = 1F;
-    private int mode;
+
     private final Paint paint;
     private final Path path;
     private final ShapeDrawable drawable;
@@ -69,10 +75,15 @@ class TipView extends AppCompatTextView {
 
     void setMode(int mode) {
         if(mode < MODE_BELOW_TARGET || mode > MODE_TO_RIGHT_TARGET){
-            throw new IllegalArgumentException("Unsupported mode: " + mode);
+            throw new IllegalArgumentException("Unsupported mode: " + mode + ".");
         }
-        this.mode = mode;
-        requestLayout();
+        if(mode != this.mode){
+            this.mode = mode;
+            setPadding(padding);
+            setMinWidth(minWidth);
+            setMaxWidth(maxWidth);
+            setMinHeight(minHeight);
+        }
     }
 
     void setPointerPosition(float position){
@@ -176,7 +187,8 @@ class TipView extends AppCompatTextView {
     }
 
     void setPadding(int padding){
-        int left = padding, top = padding, right = padding, bottom = padding;
+        int left, top, right, bottom;
+        this.padding = left = top = right = bottom = padding;
         switch (mode){
             case MODE_BELOW_TARGET:
                 top += pointerSize;
@@ -195,15 +207,8 @@ class TipView extends AppCompatTextView {
     }
 
     @Override
-    public void setMinHeight(int minHeight) {
-        if(isVerticalMode()){
-            minHeight += pointerSize;
-        }
-        super.setMinHeight(minHeight);
-    }
-
-    @Override
     public void setMinWidth(int minWidth) {
+        this.minWidth = minWidth;
         if(isHorizontalMode()){
             minWidth += pointerSize;
         }
@@ -212,10 +217,20 @@ class TipView extends AppCompatTextView {
 
     @Override
     public void setMaxWidth(int maxPixels) {
+        this.maxWidth = maxPixels;
         if(isHorizontalMode()){
             maxPixels += pointerSize;
         }
         super.setMaxWidth(maxPixels);
+    }
+
+    @Override
+    public void setMinHeight(int minHeight) {
+        this.minHeight = minHeight;
+        if(isVerticalMode()){
+            minHeight += pointerSize;
+        }
+        super.setMinHeight(minHeight);
     }
 
     @Override

@@ -11,6 +11,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -19,6 +20,7 @@ import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.view.ViewCompat;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -26,6 +28,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AbsoluteLayout;
 
@@ -69,8 +72,10 @@ public final class AppTips {
 
     private final List<Tip> tips = new ArrayList<>();
     private int currentIndex;
-    private int[] position = new int[2];
     private ViewGroup wrapper;
+
+    private final int[] position = new int[2];
+    private final Rect activityVisibleFrame = new Rect();
 
     private OnCloseListener onCloseListener;
 
@@ -537,8 +542,10 @@ public final class AppTips {
         tipView.setOnTouchListener(tipViewTouchListener);
         tipView.setText(tip.text);
         int align = tip.align;
-        int mode = getTipViewMode(align);
-        tipView.setMode(mode);
+        if(align != Tip.ALIGN_AUTO){
+            int mode = getTipViewMode(align);
+            tipView.setMode(mode);
+        }
         tipView.setPadding(tip.padding);
         tipView.setMinWidth(tip.minWidth);
         tipView.setMaxWidth(tip.maxWidth);
@@ -672,21 +679,6 @@ public final class AppTips {
         }
     }
 
-    private int getTipViewMode(int align){
-        switch (align){
-            case Tip.ALIGN_CENTER_ABOVE:
-            case Tip.ALIGN_LEFT_ABOVE:
-            case Tip.ALIGN_RIGHT_ABOVE:
-                return TipView.MODE_ABOVE_TARGET;
-            case Tip.ALIGN_LEFT:
-                return TipView.MODE_TO_LEFT_TARGET;
-            case Tip.ALIGN_RIGHT:
-                return TipView.MODE_TO_RIGHT_TARGET;
-            default:
-                return TipView.MODE_BELOW_TARGET;
-        }
-    }
-
     private final View.OnTouchListener wrapperTouchListener = new View.OnTouchListener() {
 
         @SuppressLint("ClickableViewAccessibility")
@@ -731,94 +723,79 @@ public final class AppTips {
         // it will be the view to observe for the first global
         // layout event
         do {
-            if(tip.target != null){
-                tip = tip.sibling;
-                continue;
-            }
-            View targetView = getTargetView(tip);
-            if(!ViewCompat.isLaidOut(targetView)){
-                firstTargetView = targetView;
-                break;
+            if(tip.target == null){
+                View targetView = getTargetView(tip);
+                if(!ViewCompat.isLaidOut(targetView)){
+                    firstTargetView = targetView;
+                    break;
+                }
             }
             lastTipView = tip.tipView;
             tip = tip.sibling;
         } while (tip != null);
+
         viewToObserve = firstTargetView != null ? firstTargetView :
                 wrapper != null ? wrapper : lastTipView;
 
-        ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
+        final ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
         observer.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
-                observer.removeOnGlobalLayoutListener(this);
+                if(observer.isAlive()){
+                    observer.removeOnGlobalLayoutListener(this);
+                } else {
+                    ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
+                    observer.removeOnGlobalLayoutListener(this);
+                }
 
                 Tip tip = tips.get(currentIndex);
                 do {
                     final TipView tipView = tip.tipView;
                     final Point target = tip.target;
+                    final View targetView;
+                    final int targetX, targetY;
+                    final int targetWidth, targetHeight;
 
                     if(target != null){
-                        int x = target.x, y = target.y;
-                        getTipViewPosition(x, y, tipView, tip);
+                        targetView = null;
+                        targetX = target.x; targetY = target.y;
+                        targetWidth = 0; targetHeight = 0;
                     } else {
-                        View targetView = getTargetView(tip);
-                        getTipViewPosition(targetView, tipView, tip);
+                        targetView = getTargetView(tip);
+                        targetView.getLocationOnScreen(position);
+                        targetX = position[0]; targetY = position[1];
+                        targetWidth = targetView.getWidth();
+                        targetHeight = targetView.getHeight();
                     }
-                    final int x = position[0], y = position[1];
 
-                    // adjust tip view position
-                    ViewGroup.LayoutParams lp = tipView.getLayoutParams();
-                    if(lp instanceof WindowManager.LayoutParams){
-                        WindowManager.LayoutParams wlp = (WindowManager.LayoutParams) lp;
-                        wlp.x = x; wlp.y = y;
-                        windowManager.updateViewLayout(tipView, wlp);
-                    } else {
-                        AbsoluteLayout.LayoutParams alp = (AbsoluteLayout.LayoutParams) lp;
-                        alp.x = x; alp.y = y;
-                        tipView.setLayoutParams(alp);
+                    // adjust tip view position and size
+                    int align = tip.align;
+                    if(align == Tip.ALIGN_AUTO){
+                        align = determineTipAlignment(targetX, targetY,
+                                targetWidth, targetHeight, tip);
+                        int mode = getTipViewMode(align);
+                        tipView.setMode(mode);
                     }
+                    getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tip, align);
+                    final int x = position[0], y = position[1];
+                    updateTipViewLayoutParams(tipView, x, y);
 
                     // adjust highlighting view size and position
                     // and also it's background
                     View highlightingView = tip.highlightingView;
-                    if(highlightingView != null){
-                        View targetView = getTargetView(tip);
-                        targetView.getLocationInWindow(position);
-                        final int targetX = position[0], targetY = position[1];
-                        final int targetWidth = targetView.getWidth();
-                        final int targetHeight = targetView.getHeight();
-
+                    if(targetView != null && highlightingView != null){
                         AbsoluteLayout.LayoutParams hlp = (AbsoluteLayout.LayoutParams)
                                 highlightingView.getLayoutParams();
                         hlp.x = targetX; hlp.y = targetY;
                         hlp.width = targetWidth;
                         hlp.height = targetHeight;
                         highlightingView.setLayoutParams(hlp);
-
-                        Bitmap.Config config = Bitmap.Config.ARGB_8888;
-                        Bitmap bitmap = Bitmap.createBitmap(targetWidth, targetHeight, config);
-                        Canvas canvas = new Canvas(bitmap);
-                        targetView.draw(canvas);
-                        Resources resources = context.getResources();
-                        Drawable background = new BitmapDrawable(resources, bitmap);
-                        highlightingView.setBackground(background);
+                        setupHighlighting(targetView, highlightingView);
                     }
 
                     // animate pointer position if this feature is enabled
                     if(tip.pointerAnimationEnabled){
-                        final float initialPosition = 0.5F;
-                        final float finalPosition = tipView.getPointerPosition();
-                        if(initialPosition != finalPosition){
-                            Animator animator = ObjectAnimator.ofFloat(
-                                    tipView, "pointerPosition",
-                                    initialPosition, finalPosition);
-                            animator.start();
-                        }
-
-                        Animator animator = ObjectAnimator.ofFloat(
-                                tipView, "pointerProtrusion", 0F, 1F);
-                        animator.start();
+                        animateTipViewPointer(tipView);
                     }
 
                     tip = tip.sibling;
@@ -863,48 +840,135 @@ public final class AppTips {
         return targetView;
     }
 
-    /**
-     * Calculates the absolute position for the given tip view
-     * according to the position of the target view and tip
-     * options. The calculated coordinates are written to the
-     * {@code position} field. This function can only be used
-     * if the target view and tip view are laid out and has
-     * their dimensions set.
-     */
-    private void getTipViewPosition(View targetView, View tipView, Tip tip){
-        targetView.getLocationInWindow(position);
-        int targetX = position[0];
-        int targetY = position[1];
-        int targetHeight = targetView.getHeight();
-        int targetWidth = targetView.getWidth();
-        getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tipView, tip);
+    private int determineTipAlignment(int targetX, int targetY, int targetWidth,
+                                      int targetHeight, Tip tip){
+        Window window = getActivityWindow();
+        View decorView = window.getDecorView();
+        decorView.getWindowVisibleDisplayFrame(activityVisibleFrame);
+        final int availableWidth = activityVisibleFrame.width();
+        final int availableHeight = activityVisibleFrame.height();
+        final int statusBarHeight = activityVisibleFrame.top;
+        targetY -= statusBarHeight;
+
+        final int offsetX = tip.horizontalOffset;
+        final int offsetY = tip.verticalOffset;
+
+        final int availableToLeft = targetX - offsetX;
+        final int availableToRight = availableWidth - (targetX + targetWidth + offsetX);
+        final int availableAbove = targetY - offsetY;
+        final int availableBelow = availableHeight - (targetY + targetHeight + offsetY);
+
+        final View tipView = tip.tipView;
+        final int tipWidth = tipView.getWidth();
+        final int tipHeight = tipView.getHeight();
+
+        boolean alignToRight = availableToRight > tipWidth;
+        boolean alignToLeft = availableToLeft > tipWidth;
+        boolean alignBelow = availableBelow > tipHeight;
+        boolean alignAbove = availableAbove > tipHeight;
+
+        if(alignToLeft || alignToRight){
+            if(tipHeight <= targetHeight){
+                return alignToRight ? Tip.ALIGN_RIGHT : Tip.ALIGN_LEFT;
+            } else {
+                boolean moreBelow = availableBelow > availableAbove;
+                boolean moreAbove = availableAbove > availableBelow;
+                if(alignToRight){
+                    return moreBelow ? Tip.ALIGN_RIGHT_TOP :
+                            moreAbove ? Tip.ALIGN_RIGHT_BOTTOM : Tip.ALIGN_RIGHT;
+                } else {
+                    return moreBelow ? Tip.ALIGN_LEFT_TOP :
+                            moreAbove ? Tip.ALIGN_LEFT_BOTTOM : Tip.ALIGN_LEFT;
+                }
+            }
+        } else if(alignBelow || alignAbove){
+            if(tipWidth <= targetWidth){
+                return alignAbove ? Tip.ALIGN_CENTER_ABOVE : Tip.ALIGN_CENTER_BELOW;
+            } else {
+                boolean moreToLeft = availableToLeft > availableToRight;
+                boolean moreToRight = availableToRight > availableToLeft;
+                if(alignBelow){
+                    return moreToLeft ? Tip.ALIGN_LEFT_BELOW :
+                            moreToRight ? Tip.ALIGN_RIGHT_BELOW : Tip.ALIGN_CENTER_BELOW;
+                } else {
+                    return moreToLeft ? Tip.ALIGN_LEFT_ABOVE :
+                            moreToRight ? Tip.ALIGN_RIGHT_ABOVE : Tip.ALIGN_CENTER_ABOVE;
+                }
+            }
+        } else {
+            return Tip.ALIGN_CENTER_INSIDE;
+        }
+    }
+
+    private Window getActivityWindow(){
+        final Window window;
+        if(activity != null){
+            window = activity.getWindow();
+        } else {
+            Activity activity;
+            if(fragment != null){
+                activity = fragment.getActivity();
+            } else {
+                activity = supportFragment.getActivity();
+            }
+            window = activity != null ? activity.getWindow() : null;
+        }
+        if(window == null){
+            throw new IllegalStateException(
+                    "Activity is not visual, " +
+                    "could not retrieve window.");
+        }
+        return window;
     }
 
     /**
-     * Calculates the absolute position for the given tip view
-     * according to the absolute position of the target,
-     * specified as first two arguments. This method must be
-     * called only if the tip view is laid out.
+     * Returns mode for TipView by the specified align of the tip.
+     * This method must be used only if the alignment is determined,
+     * i.e. if the align is not {@link Tip#ALIGN_AUTO}, otherwise
+     * this method throws an exception.
      */
-    private void getTipViewPosition(int targetX, int targetY, View tipView, Tip tip){
-        getTipViewPosition(targetX, targetY, 0, 0, tipView, tip);
+    private int getTipViewMode(int align){
+        switch (align){
+            case Tip.ALIGN_CENTER_ABOVE:
+            case Tip.ALIGN_LEFT_ABOVE:
+            case Tip.ALIGN_RIGHT_ABOVE:
+            case Tip.ALIGN_CENTER_INSIDE:
+                return TipView.MODE_ABOVE_TARGET;
+            case Tip.ALIGN_LEFT:
+            case Tip.ALIGN_LEFT_TOP:
+            case Tip.ALIGN_LEFT_BOTTOM:
+                return TipView.MODE_TO_LEFT_TARGET;
+            case Tip.ALIGN_RIGHT:
+            case Tip.ALIGN_RIGHT_TOP:
+            case Tip.ALIGN_RIGHT_BOTTOM:
+                return TipView.MODE_TO_RIGHT_TARGET;
+            case Tip.ALIGN_CENTER_BELOW:
+            case Tip.ALIGN_LEFT_BELOW:
+            case Tip.ALIGN_RIGHT_BELOW:
+                return TipView.MODE_BELOW_TARGET;
+            default:
+                throw new IllegalArgumentException(
+                        "Could not determine " +
+                        "TipView mode for auto align.");
+        }
     }
 
     /**
-     * Calculates the absolute position for the given tip view
-     * according to the absolute position and size of the target.
-     * This method must be called only if the tip view is laid out.
+     * Calculates the absolute position for the given tip and
+     * alignment according to the absolute position and size of
+     * the target. This method must be called only if the tip
+     * view is laid out and alignment is determined.
      */
-    private void getTipViewPosition(int targetX, int targetY,
-                                    int targetWidth, int targetHeight,
-                                    View tipView, Tip tip){
+    private void getTipViewPosition(int targetX, int targetY, int targetWidth,
+                                    int targetHeight, Tip tip, int align){
+        final TipView tipView = tip.tipView;
         final int tipHeight = tipView.getHeight();
         final int tipWidth = tipView.getWidth();
         final int offsetX = tip.horizontalOffset;
         final int offsetY = tip.verticalOffset;
-        final int delta;
+        int delta;
         final int x, y;
-        switch (tip.align){
+        switch (align){
             case Tip.ALIGN_LEFT_BELOW:
                 x = targetX + offsetX;
                 y = targetY + targetHeight + offsetY;
@@ -938,13 +1002,81 @@ public final class AppTips {
                 delta = (targetHeight - tipHeight) / 2;
                 y = targetY + delta + offsetY;
                 break;
-            default:
+            case Tip.ALIGN_LEFT_TOP:
+                x = targetX - tipWidth - offsetX;
+                y = targetY + offsetY;
+                break;
+            case Tip.ALIGN_LEFT_BOTTOM:
+                x = targetX - tipWidth - offsetX;
+                delta = targetHeight - tipHeight;
+                y = targetY + delta - offsetY;
+                break;
+            case Tip.ALIGN_RIGHT:
                 x = targetX + targetWidth + offsetX;
                 delta = (targetHeight - tipHeight) / 2;
                 y = targetY + delta + offsetY;
                 break;
+            case Tip.ALIGN_RIGHT_TOP:
+                x = targetX + targetWidth + offsetX;
+                y = targetY + offsetY;
+                break;
+            case Tip.ALIGN_RIGHT_BOTTOM:
+                x = targetX + targetWidth + offsetX;
+                delta = targetHeight - tipHeight;
+                y = targetY + delta - offsetY;
+                break;
+            case Tip.ALIGN_CENTER_INSIDE:
+                delta = (targetWidth - tipWidth) / 2;
+                x = targetX + delta + offsetX;
+                int tipBodyHeight = tipHeight - tipView.pointerSize;
+                delta = (targetHeight - tipBodyHeight) / 2;
+                y = targetY + delta + offsetY;
+                break;
+            default:
+                x = 0; y = 0;
+                break;
         }
         position[0] = x; position[1] = y;
+    }
+
+    private void updateTipViewLayoutParams(View tipView, int x, int y){
+        ViewGroup.LayoutParams lp = tipView.getLayoutParams();
+        if(lp instanceof WindowManager.LayoutParams){
+            WindowManager.LayoutParams wlp = (WindowManager.LayoutParams) lp;
+            wlp.x = x; wlp.y = y;
+            windowManager.updateViewLayout(tipView, wlp);
+        } else {
+            AbsoluteLayout.LayoutParams alp = (AbsoluteLayout.LayoutParams) lp;
+            alp.x = x; alp.y = y;
+            tipView.setLayoutParams(alp);
+        }
+    }
+
+    private void setupHighlighting(View targetView, View highlightingView){
+        final int width = targetView.getWidth();
+        final int height = targetView.getHeight();
+        Bitmap.Config config = Bitmap.Config.ARGB_8888;
+        Bitmap bitmap = Bitmap.createBitmap(width, height, config);
+        Canvas canvas = new Canvas(bitmap);
+        targetView.draw(canvas);
+        Resources resources = context.getResources();
+        Drawable background = new BitmapDrawable(resources, bitmap);
+        highlightingView.setBackground(background);
+    }
+
+    private void animateTipViewPointer(TipView tipView){
+        final float initialPosition = 0.5F;
+        final float finalPosition = tipView.getPointerPosition();
+        if(initialPosition != finalPosition){
+            Animator animator = ObjectAnimator.ofFloat(
+                    tipView, "pointerPosition",
+                    initialPosition, finalPosition);
+            animator.start();
+        }
+
+        Animator animator = ObjectAnimator.ofFloat(
+                tipView, "pointerProtrusion", 0F, 1F);
+        animator.start();
     }
 
     /**

@@ -8,7 +8,6 @@ import android.graphics.Point;
 import android.support.annotation.IdRes;
 import android.support.annotation.StyleRes;
 import android.util.DisplayMetrics;
-import android.view.Gravity;
 import android.view.View;
 
 /**
@@ -79,6 +78,18 @@ public final class Tip {
      */
     public static final int ALIGN_RIGHT = 8;
 
+    public static final int ALIGN_LEFT_TOP = 9;
+
+    public static final int ALIGN_LEFT_BOTTOM = 10;
+
+    public static final int ALIGN_RIGHT_TOP = 11;
+
+    public static final int ALIGN_RIGHT_BOTTOM = 12;
+
+    public static final int ALIGN_CENTER_INSIDE = 13;
+
+    public static final int ALIGN_AUTO = 14;
+
     private static final int DEFAULT_TEXT_SIZE_SP = 14;
 
     final int targetId;
@@ -96,6 +107,7 @@ public final class Tip {
     int minHeight;
     int minWidth;
     int maxWidth;
+    boolean autoPointerPositionEnabled;
     float pointerPosition;
     int pointerOffset;
     boolean pointerAnimationEnabled;
@@ -166,7 +178,8 @@ public final class Tip {
         }
 
         // set the rest defaults
-        align = ALIGN_LEFT_BELOW;
+        align = ALIGN_AUTO;
+        autoPointerPositionEnabled = true;
         pointerPosition = 0.5f;
         pointerOffset = 0;
         verticalOffset = 0;
@@ -269,7 +282,7 @@ public final class Tip {
      * @param align the desired alignment of the tip view.
      */
     public void setAlign(int align){
-        if(align < ALIGN_LEFT_ABOVE || align > ALIGN_RIGHT){
+        if(align < ALIGN_LEFT_ABOVE || align > ALIGN_AUTO){
             throw new IllegalArgumentException(
                     "Unsupported align: " + align + ".");
         }
@@ -336,6 +349,14 @@ public final class Tip {
      */
     public int getMaxWidth() {
         return maxWidth;
+    }
+
+    public void setAutoPointerPositionEnabled(boolean autoPointerPosition) {
+        this.autoPointerPositionEnabled = autoPointerPosition;
+    }
+
+    public boolean isAutoPointerPositionEnabled() {
+        return autoPointerPositionEnabled;
     }
 
     /**

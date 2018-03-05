@@ -41,27 +41,18 @@ public class MainActivity extends Activity {
 
     private Tip createFirstTip(){
         View targetView = findViewById(R.id.text);
-        Tip tip = appTips.newTip(targetView, "Gendolf Gray");
-        tip.setVerticalOffset(16);
-        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
-        return tip;
+        return appTips.newTip(targetView, "Gendolf Gray");
     }
 
     private Tip createSecondTip(){
         Tip tip = appTips.newTip(R.id.text2, "Aragorn Great");
-        tip.setHorizontalOffset(12);
-        tip.setVerticalOffset(12);
         tip.setHighlightingEnabled(false);
         tip.setPointerAnimationEnabled(false);
-        tip.setPointerOffset(48);
         return tip;
     }
 
     private Tip createThirdTip(){
         Tip tip = appTips.newTip(R.id.text1, "Legolas Elf");
-        tip.setAlign(Tip.ALIGN_LEFT);
-        tip.setMaxWidth(150);
-        tip.setMinWidth(100);
         tip.setColor(Color.GREEN);
         tip.setTextColor(Color.DKGRAY);
         return tip;
@@ -70,7 +61,6 @@ public class MainActivity extends Activity {
     private Tip createFourthTip(){
         Tip tip = appTips.newTip(400, 500, "Bilbo Beggins");
         tip.setColor(getResources().getColor(R.color.colorWhiteTranslucent));
-        tip.setAlign(Tip.ALIGN_CENTER_ABOVE);
         tip.setHighlightingEnabled(true);
         tip.setPointerPosition(0.7F);
         tip.setGravity(Gravity.START);
@@ -78,9 +68,7 @@ public class MainActivity extends Activity {
     }
 
     private Tip createOneMoreTip(){
-        Tip tip = appTips.newTip(R.id.imageButton1, "Smeagol");
-        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
-        return tip;
+        return appTips.newTip(R.id.imageButton1, "Smeagol");
     }
 
     private void testAdvancedTips(){
