@@ -1,8 +1,9 @@
 package com.imogene.sample;
 
-import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.DialogFragment;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.View;
 
@@ -12,7 +13,7 @@ import com.imogene.apptips.Tip;
 /**
  * Created by Admin on 25.04.2016.
  */
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     private AppTips appTips;
 
@@ -85,5 +86,10 @@ public class MainActivity extends Activity {
             appTips.addTip(createOneMoreTip());
         }
         appTips.show();
+    }
+
+    private void testTipForDialog(){
+        DialogFragment dialog = TestDialogFragment.newInstance();
+        dialog.show(getSupportFragmentManager(), "TEST_DIALOG");
     }
 }

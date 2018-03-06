@@ -11,7 +11,7 @@
 
     <style name="MyOwnTipStyle" parent="TipStyle">
         <item name="tipGravity">start</item>
-        <item name="tipMinWidth">200dp</item>
+        <item name="tipMinWidth">300dp</item>
     </style>
 
 </resources>
