@@ -69,7 +69,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Tip createOneMoreTip(){
-        return appTips.newTip(R.id.imageButton1, "Smeagol");
+        Tip tip = appTips.newTip(R.id.imageButton1, "Smeagol");
+        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
+        return tip;
     }
 
     private void testAdvancedTips(){
