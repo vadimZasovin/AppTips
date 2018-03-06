@@ -775,6 +775,10 @@ public final class AppTips {
                         int mode = getTipViewMode(align);
                         tipView.setMode(mode);
                     }
+                    if(tip.autoPointerPositionEnabled){
+                        updatePointerPositionForTipView(targetX, targetY,
+                                targetWidth, targetHeight, align, tipView);
+                    }
                     getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tip, align);
                     final int x = position[0], y = position[1];
                     updateTipViewLayoutParams(tipView, x, y);
@@ -950,6 +954,22 @@ public final class AppTips {
                     "could not retrieve window.");
         }
         return window;
+    }
+
+    private void updatePointerPositionForTipView(int targetX, int targetY, int targetWidth,
+                                                 int targetHeight, int align, TipView tipView){
+        if(isAlignmentConsiderCentering(align)){
+            tipView.setPointerPosition(0.5F);
+            return;
+        }
+
+
+    }
+
+    private boolean isAlignmentConsiderCentering(int align){
+        return align == Tip.ALIGN_CENTER_ABOVE || align == Tip.ALIGN_CENTER_BELOW
+                || align == Tip.ALIGN_LEFT || align == Tip.ALIGN_RIGHT
+                || align == Tip.ALIGN_CENTER_INSIDE;
     }
 
     /**
