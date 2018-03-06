@@ -420,7 +420,7 @@ public final class AppTips {
                     tip.tipView = null;
                     if(!wrapped){
                         windowManager.removeView(tipView);
-                    } else if(tip.highlightingView != null){
+                    } else {
                         tip.highlightingView = null;
                     }
                 }
@@ -851,9 +851,9 @@ public final class AppTips {
     }
 
     /**
-     * Determines the most appropriate for the given tip by the
-     * specified target position and size. This method is used when
-     * the initial alignment (set by the user) has value {@link Tip#ALIGN_AUTO}.
+     * Determines the most appropriate alignment for the given tip by the
+     * specified target position and size. This method is used when the
+     * initial alignment (set by the user) has value {@link Tip#ALIGN_AUTO}.
      */
     private int determineTipAlignment(int targetX, int targetY, int targetWidth,
                                       int targetHeight, Tip tip){
