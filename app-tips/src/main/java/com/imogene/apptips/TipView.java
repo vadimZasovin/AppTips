@@ -130,8 +130,7 @@ class TipView extends AppCompatTextView {
             wh = viewWidth * pointerPosition;
             hh = viewHeight * pointerPosition;
         }
-        final float sin60 = Util.sinDegrees(60);
-        bh = dynamicSize / (2 * sin60);
+        bh = dynamicSize / (float) Math.sqrt(3);
 
         final float bx = wh - bh;
         final float cx = wh + bh;
