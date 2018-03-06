@@ -86,12 +86,19 @@ public final class AppTips {
      *                 be searched.
      */
     public AppTips(@NonNull Activity activity){
-        Util.checkNonNullParameter(activity, "activity");
+        checkNonNullParameter(activity, "activity");
         context = activity;
         windowManager = activity.getWindowManager();
         this.activity = activity;
         this.fragment = null;
         this.supportFragment = null;
+    }
+
+    private void checkNonNullParameter(Object parameter, String name){
+        if(parameter == null){
+            throw new IllegalArgumentException(
+                    "The " + name + " parameter must not be null.");
+        }
     }
 
     /**
@@ -105,7 +112,7 @@ public final class AppTips {
      *                 be searched.
      */
     public AppTips(@NonNull Fragment fragment){
-        Util.checkNonNullParameter(fragment, "fragment");
+        checkNonNullParameter(fragment, "fragment");
         Activity activity = fragment.getActivity();
         if(activity == null){
             throw new IllegalStateException(
@@ -129,7 +136,7 @@ public final class AppTips {
      *                 be searched.
      */
     public AppTips(@NonNull android.support.v4.app.Fragment fragment){
-        Util.checkNonNullParameter(fragment, "fragment");
+        checkNonNullParameter(fragment, "fragment");
         Activity activity = fragment.getActivity();
         if(activity == null){
             throw new IllegalStateException(
@@ -262,7 +269,7 @@ public final class AppTips {
      * @see #addTips(boolean, Tip...)
      */
     public void addTip(Tip tip){
-        Util.checkNonNullParameter(tip, "tip");
+        checkNonNullParameter(tip, "tip");
         tips.add(tip);
     }
 
@@ -277,7 +284,7 @@ public final class AppTips {
      * @param tips the tips to add.
      */
     public void addTips(boolean highlightingEnabled, Tip... tips){
-        Util.checkNonNullParameter(tips, "tips");
+        checkNonNullParameter(tips, "tips");
         int length = tips.length;
         if(length > 0){
             Tip tip = tips[0];
