@@ -20,7 +20,6 @@ import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.view.ViewCompat;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -850,58 +849,85 @@ public final class AppTips {
         Window window = getActivityWindow();
         View decorView = window.getDecorView();
         decorView.getWindowVisibleDisplayFrame(activityVisibleFrame);
-        final int availableWidth = activityVisibleFrame.width();
-        final int availableHeight = activityVisibleFrame.height();
-        final int statusBarHeight = activityVisibleFrame.top;
-        targetY -= statusBarHeight;
+        final Rect rect = activityVisibleFrame;
+        final int availableWidth = rect.width();
+        final int availableHeight = rect.height();
+        targetY -= rect.top;
 
         final int offsetX = tip.horizontalOffset;
         final int offsetY = tip.verticalOffset;
 
-        final int availableToLeft = targetX - offsetX;
-        final int availableToRight = availableWidth - (targetX + targetWidth + offsetX);
         final int availableAbove = targetY - offsetY;
         final int availableBelow = availableHeight - (targetY + targetHeight + offsetY);
+        final int availableToRight = availableWidth - (targetX + targetWidth + offsetX);
+        final int availableToLeft = targetX - offsetX;
 
         final View tipView = tip.tipView;
-        final int tipWidth = tipView.getWidth();
         final int tipHeight = tipView.getHeight();
+        final int tipWidth = tipView.getWidth();
 
-        boolean alignToRight = availableToRight > tipWidth;
-        boolean alignToLeft = availableToLeft > tipWidth;
-        boolean alignBelow = availableBelow > tipHeight;
-        boolean alignAbove = availableAbove > tipHeight;
+        final boolean canAlignAbove = availableAbove >= tipHeight;
+        final boolean canAlignBelow = availableBelow >= tipHeight;
+        final boolean canAlignToRight = availableToRight >= tipWidth;
+        final boolean canAlignToLeft = availableToLeft >= tipWidth;
 
-        if(alignToLeft || alignToRight){
-            if(tipHeight <= targetHeight){
-                return alignToRight ? Tip.ALIGN_RIGHT : Tip.ALIGN_LEFT;
-            } else {
-                boolean moreBelow = availableBelow > availableAbove;
-                boolean moreAbove = availableAbove > availableBelow;
-                if(alignToRight){
-                    return moreBelow ? Tip.ALIGN_RIGHT_TOP :
-                            moreAbove ? Tip.ALIGN_RIGHT_BOTTOM : Tip.ALIGN_RIGHT;
-                } else {
-                    return moreBelow ? Tip.ALIGN_LEFT_TOP :
-                            moreAbove ? Tip.ALIGN_LEFT_BOTTOM : Tip.ALIGN_LEFT;
-                }
-            }
-        } else if(alignBelow || alignAbove){
-            if(tipWidth <= targetWidth){
-                return alignAbove ? Tip.ALIGN_CENTER_ABOVE : Tip.ALIGN_CENTER_BELOW;
-            } else {
-                boolean moreToLeft = availableToLeft > availableToRight;
-                boolean moreToRight = availableToRight > availableToLeft;
-                if(alignBelow){
-                    return moreToLeft ? Tip.ALIGN_LEFT_BELOW :
-                            moreToRight ? Tip.ALIGN_RIGHT_BELOW : Tip.ALIGN_CENTER_BELOW;
-                } else {
-                    return moreToLeft ? Tip.ALIGN_LEFT_ABOVE :
-                            moreToRight ? Tip.ALIGN_RIGHT_ABOVE : Tip.ALIGN_CENTER_ABOVE;
-                }
-            }
-        } else {
+        final boolean canAlignVertically = canAlignAbove || canAlignBelow;
+        final boolean canAlignHorizontally = canAlignToRight || canAlignToLeft;
+
+        if(!(canAlignVertically || canAlignHorizontally)){
             return Tip.ALIGN_CENTER_INSIDE;
+        }
+
+        if(canAlignVertically){
+            final boolean canCenterHorizontally;
+            if(tipWidth <= targetWidth){
+                canCenterHorizontally = true;
+            } else {
+                int delta = (tipWidth - targetWidth) / 2;
+                int left = targetX - delta;
+                int right = targetX + targetWidth + delta;
+                boolean fitToLeft = left >= 0;
+                boolean fitToRight = right <= rect.right;
+                canCenterHorizontally = fitToLeft && fitToRight;
+            }
+
+            if(canCenterHorizontally){
+                boolean above = availableAbove >= availableBelow;
+                return above ? Tip.ALIGN_CENTER_ABOVE : Tip.ALIGN_CENTER_BELOW;
+            }
+        }
+
+        if(canAlignHorizontally){
+            final boolean canCenterVertically;
+            if(tipHeight <= targetHeight){
+                canCenterVertically = true;
+            } else {
+                int delta = (tipHeight - targetHeight) / 2;
+                int top = targetY - delta;
+                int bottom = targetY + targetHeight + delta;
+                boolean fitAbove = top >= 0;
+                boolean fitBelow = bottom <= rect.bottom;
+                canCenterVertically = fitAbove && fitBelow;
+            }
+
+            if(canCenterVertically){
+                boolean toRight = availableToRight >= availableToLeft;
+                return toRight ? Tip.ALIGN_RIGHT : Tip.ALIGN_LEFT;
+            }
+        }
+
+        if(canAlignVertically){
+            boolean above = availableAbove >= availableBelow;
+            boolean toLeft = availableToLeft <= availableToRight;
+            return above ? toLeft ? Tip.ALIGN_LEFT_ABOVE :
+                    Tip.ALIGN_RIGHT_ABOVE : toLeft ?
+                    Tip.ALIGN_LEFT_BELOW : Tip.ALIGN_RIGHT_BELOW;
+        } else {
+            boolean toRight = availableToRight >= availableToLeft;
+            boolean top = availableAbove <= availableBelow;
+            return toRight ? top ? Tip.ALIGN_RIGHT_TOP :
+                    Tip.ALIGN_RIGHT_BOTTOM : top ?
+                    Tip.ALIGN_LEFT_TOP : Tip.ALIGN_LEFT_BOTTOM;
         }
     }
 

@@ -83,6 +83,11 @@ class TipView extends AppCompatTextView {
             setMinWidth(minWidth);
             setMaxWidth(maxWidth);
             setMinHeight(minHeight);
+
+            int width = getMeasuredWidth();
+            int height = getMeasuredHeight();
+            updateShapeBounds(width, height);
+            updatePointerPathPoints(width, height);
         }
     }
 
