@@ -24,18 +24,19 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.text).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                testAdvancedTips();
+                testSimpleTips();
             }
         });
-        testAdvancedTips();
+        //testAdvancedTips();
     }
 
     private void testSimpleTips(){
         if(appTips == null){
             appTips = new AppTips(this);
-            appTips.addTip(createFirstTip());
+            /*appTips.addTip(createFirstTip());
             appTips.addTip(createSecondTip());
-            appTips.addTip(createThirdTip());
+            appTips.addTip(createThirdTip());*/
+            appTips.addTip(createOneMoreTip());
         }
         appTips.show();
     }
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private Tip createOneMoreTip(){
         Tip tip = appTips.newTip(R.id.imageButton1,
                 "Smeagol Gollum Lord of the rings... It will never release. Murder...");
-        tip.setAlign(Tip.ALIGN_RIGHT_TOP);
+        //tip.setAlign(Tip.ALIGN_LEFT);
         tip.setMinWidth(0);
         tip.setMaxWidth(250);
         return tip;
