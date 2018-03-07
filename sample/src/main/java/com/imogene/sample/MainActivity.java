@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
     private Tip createOneMoreTip(){
         Tip tip = appTips.newTip(R.id.imageButton1,
                 "Smeagol Gollum Lord of the rings... It will never release. Murder...");
-        tip.setAlign(Tip.ALIGN_LEFT);
         tip.setMinWidth(0);
         tip.setMaxWidth(250);
         return tip;

@@ -721,13 +721,9 @@ public final class AppTips {
      */
     private void adjustPositions(){
         Tip tip = tips.get(currentIndex);
-        // find view to observe for the first global layout event
         final View viewToObserve;
         View firstTargetView = null;
         View lastTipView = tip.tipView;
-        // if we find a target view that is not laid out yet
-        // it will be the view to observe for the first global
-        // layout event
         do {
             if(tip.target == null){
                 View targetView = getTargetView(tip);
@@ -753,60 +749,9 @@ public final class AppTips {
                     ViewTreeObserver observer = viewToObserve.getViewTreeObserver();
                     observer.removeOnGlobalLayoutListener(this);
                 }
-
                 Tip tip = tips.get(currentIndex);
                 do {
-                    final TipView tipView = tip.tipView;
-                    final Point target = tip.target;
-                    final View targetView;
-                    final int targetX, targetY;
-                    final int targetWidth, targetHeight;
-
-                    if(target != null){
-                        targetView = null;
-                        targetX = target.x; targetY = target.y;
-                        targetWidth = 0; targetHeight = 0;
-                    } else {
-                        targetView = getTargetView(tip);
-                        targetView.getLocationOnScreen(position);
-                        targetX = position[0]; targetY = position[1];
-                        targetWidth = targetView.getWidth();
-                        targetHeight = targetView.getHeight();
-                    }
-
-                    // adjust tip view position and size
-                    int align = tip.align;
-                    if(align == Tip.ALIGN_AUTO){
-                        align = determineTipAlignment(targetX, targetY,
-                                targetWidth, targetHeight, tip);
-                        int mode = getTipViewMode(align);
-                        tipView.setMode(mode);
-                    }
-                    if(tip.autoPointerPositionEnabled){
-                        updatePointerPositionForTipView(targetWidth, targetHeight, align, tipView);
-                    }
-                    getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tip, align);
-                    final int x = position[0], y = position[1];
-                    updateTipViewLayoutParams(tipView, x, y);
-
-                    // adjust highlighting view size and position
-                    // and also it's background
-                    View highlightingView = tip.highlightingView;
-                    if(targetView != null && highlightingView != null){
-                        AbsoluteLayout.LayoutParams hlp = (AbsoluteLayout.LayoutParams)
-                                highlightingView.getLayoutParams();
-                        hlp.x = targetX; hlp.y = targetY;
-                        hlp.width = targetWidth;
-                        hlp.height = targetHeight;
-                        highlightingView.setLayoutParams(hlp);
-                        setupHighlighting(targetView, highlightingView);
-                    }
-
-                    // animate pointer position if this feature is enabled
-                    if(tip.pointerAnimationEnabled){
-                        animateTipViewPointer(tipView);
-                    }
-
+                    adjustPositions(tip);
                     tip = tip.sibling;
                 } while (tip != null);
             }
@@ -847,6 +792,55 @@ public final class AppTips {
                     "Target view is not found.");
         }
         return targetView;
+    }
+
+    private void adjustPositions(Tip tip){
+        final TipView tipView = tip.tipView;
+        final Point target = tip.target;
+        final View targetView;
+        final int targetX, targetY;
+        final int targetWidth, targetHeight;
+
+        if(target != null){
+            targetView = null;
+            targetX = target.x; targetY = target.y;
+            targetWidth = 0; targetHeight = 0;
+        } else {
+            targetView = getTargetView(tip);
+            targetView.getLocationOnScreen(position);
+            targetX = position[0]; targetY = position[1];
+            targetWidth = targetView.getWidth();
+            targetHeight = targetView.getHeight();
+        }
+
+        int align = tip.align;
+        if(align == Tip.ALIGN_AUTO){
+            align = determineTipAlignment(targetX, targetY,
+                    targetWidth, targetHeight, tip);
+            int mode = getTipViewMode(align);
+            tipView.setMode(mode);
+        }
+        if(tip.autoPointerPositionEnabled){
+            updatePointerPositionForTipView(targetWidth, targetHeight, align, tipView);
+        }
+        getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tip, align);
+        final int x = position[0], y = position[1];
+        updateTipViewLayoutParams(tipView, x, y);
+
+        View highlightingView = tip.highlightingView;
+        if(targetView != null && highlightingView != null){
+            AbsoluteLayout.LayoutParams hlp = (AbsoluteLayout.LayoutParams)
+                    highlightingView.getLayoutParams();
+            hlp.x = targetX; hlp.y = targetY;
+            hlp.width = targetWidth;
+            hlp.height = targetHeight;
+            highlightingView.setLayoutParams(hlp);
+            setupHighlighting(targetView, highlightingView);
+        }
+
+        if(tip.pointerAnimationEnabled){
+            animateTipViewPointer(tipView);
+        }
     }
 
     /**
