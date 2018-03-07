@@ -78,16 +78,46 @@ public final class Tip {
      */
     public static final int ALIGN_RIGHT = 8;
 
+    /**
+     * Tip alignment. Aligns the right side of the tip view (with pointer) to the
+     * left side of the target and aligns the top side of the tip view to the top
+     * side of the target.
+     */
     public static final int ALIGN_LEFT_TOP = 9;
 
+    /**
+     * Tip alignment. Aligns the right side of the tip view (with pointer) to the
+     * left side of the target and aligns the bottom side of the tip view to the
+     * bottom side of the target.
+     */
     public static final int ALIGN_LEFT_BOTTOM = 10;
 
+    /**
+     * Tip alignment. Aligns the left side of the tip view (with pointer) to the
+     * right side of the target and aligns the top side of the tip view to the
+     * top side of the target.
+     */
     public static final int ALIGN_RIGHT_TOP = 11;
 
+    /**
+     * Tip alignment. Aligns the left side of the tip view (with pointer) to the
+     * right side of the target and aligns the bottom side of the tip view to the
+     * bottom side of the target.
+     */
     public static final int ALIGN_RIGHT_BOTTOM = 12;
 
+    /**
+     * Tip alignment. Places the tip view to the center of the target view. The
+     * pointer is positioned at the bottom side of the tip view.
+     */
     public static final int ALIGN_CENTER_INSIDE = 13;
 
+    /**
+     * Tip alignment. Indicates that the actual alignment will be chosen
+     * automatically by the position and size of the target and size of
+     * the tip view. This alignment is set by default for newly created
+     * {@code Tip} objects.
+     */
     public static final int ALIGN_AUTO = 14;
 
     private static final int DEFAULT_TEXT_SIZE_SP = 14;
@@ -279,6 +309,7 @@ public final class Tip {
     /**
      * Sets the alignment of the tip view. There are 8 possible
      * values and they are listed as constants in this class.
+     * The default value is {@link #ALIGN_AUTO}.
      * @param align the desired alignment of the tip view.
      */
     public void setAlign(int align){
@@ -351,10 +382,26 @@ public final class Tip {
         return maxWidth;
     }
 
+    /**
+     * Specifies whether the position of the pointer must be determined
+     * automatically or not. If this property is set to {@code true} the
+     * values of {@code pointerPosition} and {@code pointerOffset} are
+     * ignored and the actual position of the pointer will be determined
+     * automatically by the alignment of the tip and it's size.
+     * <p>
+     * This feature is enabled by default.
+     * @param autoPointerPosition boolean specifying whether the position
+     *                            of the pointer must be determined
+     *                            automatically or not.
+     */
     public void setAutoPointerPositionEnabled(boolean autoPointerPosition) {
         this.autoPointerPositionEnabled = autoPointerPosition;
     }
 
+    /**
+     * Indicates whether the automatic pointer position is enabled or not.
+     * @return {@code true} if the feature is enabled, {@code false} otherwise.
+     */
     public boolean isAutoPointerPositionEnabled() {
         return autoPointerPositionEnabled;
     }
@@ -365,6 +412,9 @@ public final class Tip {
      * The default value is {@code 0.5}, meaning that the pointer
      * is positioned in the center of the appropriate side of the
      * rectangle of the tip view.
+     * <p>
+     * This property is ignored if {@link #setAutoPointerPositionEnabled(boolean)}
+     * set to {@code true}.
      * @param position position of the pointer as fraction from the
      *                 size of the appropriate side. Must be in range
      *                 [0, 1].
@@ -393,6 +443,9 @@ public final class Tip {
      * property when the position of the pointer is calculated, i.e. if the
      * pointer offset is not {@code 0} the value set with the
      * {@link #setPointerPosition(float)} method is ignored.
+     * <p>
+     * This property is ignored if {@link #setAutoPointerPositionEnabled(boolean)}
+     * set to {@code true}.
      * @param pointerOffset offset of the pointer in pixels.
      * @see #setPointerPosition(float)
      */

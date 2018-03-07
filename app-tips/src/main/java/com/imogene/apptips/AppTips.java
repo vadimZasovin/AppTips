@@ -783,8 +783,7 @@ public final class AppTips {
                         tipView.setMode(mode);
                     }
                     if(tip.autoPointerPositionEnabled){
-                        updatePointerPositionForTipView(targetX, targetY,
-                                targetWidth, targetHeight, align, tipView);
+                        updatePointerPositionForTipView(targetWidth, targetHeight, align, tipView);
                     }
                     getTipViewPosition(targetX, targetY, targetWidth, targetHeight, tip, align);
                     final int x = position[0], y = position[1];
@@ -963,20 +962,45 @@ public final class AppTips {
         return window;
     }
 
-    private void updatePointerPositionForTipView(int targetX, int targetY, int targetWidth,
-                                                 int targetHeight, int align, TipView tipView){
-        if(isAlignmentConsiderCentering(align)){
-            tipView.setPointerPosition(0.5F);
-            return;
+    private void updatePointerPositionForTipView(int targetWidth, int targetHeight,
+                                                 int align, TipView tipView){
+        final int tipWidth = tipView.getWidth();
+        final int tipHeight = tipView.getHeight();
+
+        switch (align) {
+            case Tip.ALIGN_CENTER_ABOVE:
+            case Tip.ALIGN_CENTER_BELOW:
+            case Tip.ALIGN_RIGHT:
+            case Tip.ALIGN_LEFT:
+            case Tip.ALIGN_CENTER_INSIDE:
+                tipView.setPointerPosition(0.5F);
+                break;
+            case Tip.ALIGN_RIGHT_ABOVE:
+            case Tip.ALIGN_LEFT_ABOVE:
+            case Tip.ALIGN_RIGHT_BELOW:
+            case Tip.ALIGN_LEFT_BELOW:
+                if(tipWidth <= targetWidth){
+                    tipView.setPointerPosition(0.5F);
+                } else {
+                    int offset = (tipWidth - targetWidth) / 2;
+                    if(align == Tip.ALIGN_LEFT_ABOVE || align == Tip.ALIGN_LEFT_BELOW){
+                        offset *= -1;
+                    }
+                    tipView.setPointerOffset(offset);
+                }
+                break;
+            default:
+                if(tipHeight <= targetHeight){
+                    tipView.setPointerPosition(0.5F);
+                } else {
+                    int offset = (tipHeight - targetHeight) / 2;
+                    if(align == Tip.ALIGN_RIGHT_TOP || align == Tip.ALIGN_LEFT_TOP){
+                        offset *= -1;
+                    }
+                    tipView.setPointerOffset(offset);
+                }
+                break;
         }
-
-
-    }
-
-    private boolean isAlignmentConsiderCentering(int align){
-        return align == Tip.ALIGN_CENTER_ABOVE || align == Tip.ALIGN_CENTER_BELOW
-                || align == Tip.ALIGN_LEFT || align == Tip.ALIGN_RIGHT
-                || align == Tip.ALIGN_CENTER_INSIDE;
     }
 
     /**

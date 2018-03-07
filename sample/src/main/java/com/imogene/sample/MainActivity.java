@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity {
     private Tip createSecondTip(){
         Tip tip = appTips.newTip(R.id.text2, "Aragorn Great");
         tip.setHighlightingEnabled(false);
-        tip.setPointerAnimationEnabled(false);
         return tip;
     }
 
@@ -69,8 +68,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Tip createOneMoreTip(){
-        Tip tip = appTips.newTip(R.id.imageButton1, "Smeagol");
-        tip.setAlign(Tip.ALIGN_CENTER_BELOW);
+        Tip tip = appTips.newTip(R.id.imageButton1,
+                "Smeagol Gollum Lord of the rings... It will never release. Murder...");
+        tip.setAlign(Tip.ALIGN_RIGHT_TOP);
+        tip.setMinWidth(0);
+        tip.setMaxWidth(250);
         return tip;
     }
 
